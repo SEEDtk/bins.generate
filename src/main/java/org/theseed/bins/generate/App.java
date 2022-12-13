@@ -8,6 +8,7 @@ import org.theseed.utils.BaseProcessor;
  * Commands for utilities relating to binning.
  *
  * build		build the protein finder FASTA files
+ * bin			process a FASTA file to create bins
  *
  */
 public class App {
@@ -21,6 +22,9 @@ public class App {
         switch (command) {
         case "build" :
             processor = new BuildProcessor();
+            break;
+        case "bin" :
+            processor = new BinProcessor();
             break;
         default:
             throw new RuntimeException("Invalid command " + command);

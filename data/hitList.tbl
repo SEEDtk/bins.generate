@@ -1,0 +1,20 @@
+contig_id	role_id	high_score	total_score	match_len	species_id	species_name	ref_genome_id
+NODE_58_length_26115_cov_109.467_ID_1122748	ProtTranSubuSecy	2460.0	2460.0	1332	548	Klebsiella aerogenes	548.1022
+NODE_11_length_185364_cov_86.4227_ID_1122654	AspaTrnaSynt	3297.0	3297.0	1785	548	Klebsiella aerogenes	548.1098
+NODE_12_length_174929_cov_82.7452_ID_1122656	PhenTrnaSyntBeta	4405.0	9786.0	5298	548	Klebsiella aerogenes	548.1036
+NODE_54_length_27274_cov_872.32_ID_1122740	ThreTrnaSynt	3596.0	3596.0	1947	1308	Streptococcus thermophilus	1308.1723
+NODE_30_length_66342_cov_872.22_ID_1122692	AlanTrnaSynt	4837.0	4837.0	2619	1308	Streptococcus thermophilus	1308.47
+NODE_45_length_39140_cov_893.894_ID_1122722	TranInitFact2n1	5230.0	5230.0	2832	1308	Streptococcus thermophilus	1308.1902
+NODE_36_length_51523_cov_936.232_ID_1122704	PhenTrnaSyntBeta	4444.0	6373.0	3450	1308	Streptococcus thermophilus	767463.3
+NODE_24_length_91368_cov_976.164_ID_1122680	AspaTrnaSynt	3236.0	3236.0	1752	1308	Streptococcus thermophilus	1308.1493
+NODE_39_length_42093_cov_97.0888_ID_1122710	SignRecoPartProt	2516.0	2516.0	1362	548	Klebsiella aerogenes	548.1112
+NODE_16_length_142279_cov_103.961_ID_1122664	TranInitFact2n1	4948.0	4948.0	2679	562	Escherichia coli	562.101338
+NODE_60_length_24110_cov_937.65_ID_1122752	ProtTranSubuSecy	2388.0	2388.0	1293	1308	Streptococcus thermophilus	1308.1895
+NODE_50_length_33877_cov_93.2769_ID_1122732	ThreTrnaSynt	3596.0	3596.0	1947	573	Klebsiella pneumoniae	1392499.4
+NODE_47_length_34567_cov_828.007_ID_1122726	SignRecoPartProt	2798.0	2798.0	1515	1308	Streptococcus thermophilus	1308.585
+NODE_7_length_241038_cov_99.478_ID_1122646	IsolTrnaSynt	5197.0	5197.0	2814	548	Klebsiella aerogenes	548.1097
+NODE_8_length_216254_cov_98.964_ID_1122648	NLThreSynt	1823.0	1823.0	987	548	Klebsiella aerogenes	548.504
+NODE_2_length_369950_cov_95.3433_ID_1122636	AlanTrnaSynt	4848.0	4848.0	2625	548	Klebsiella aerogenes	548.520
+NODE_5_length_268256_cov_107.095_ID_1122642	IsolTrnaSynt	76.8	76.8	75	169760	Paenibacillus stellifer	169760.4
+NODE_22_length_100595_cov_943.799_ID_1122676	NLThreSynt	1873.0	1873.0	1014	1308	Streptococcus thermophilus	1308.1730
+NODE_42_length_41417_cov_882.602_ID_1122716	IsolTrnaSynt	5142.0	5142.0	2784	1308	Streptococcus thermophilus	1308.1142
