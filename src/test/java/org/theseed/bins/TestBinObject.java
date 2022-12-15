@@ -74,6 +74,9 @@ class TestBinObject {
         assertThat(bin1.getDomain(), equalTo("Bacteria"));
         assertThat(bin1.getGc(), equalTo(11));
         assertThat(bin1.getRefGenome(), equalTo("548.1022"));
+        // Verify that the contig map is updated.
+        assertThat(binGroup.getContigBin(node2Id), equalTo(bin1));
+        assertThat(binGroup.getContigBin(node1Id), equalTo(bin1));
         // Test JSON conversion.
         JsonObject binJson = bin1.toJson();
         Bin bin3 = new Bin(binJson);
@@ -197,6 +200,36 @@ class TestBinObject {
         File loadedInFile = loadedGroup.getInputFile();
         assertThat(loadedInFile.isAbsolute(), equalTo(true));
         assertThat(loadedInFile.getAbsolutePath(), equalTo(inFile.getAbsolutePath()));
+    }
+
+    @Test
+    void testMultiRefGenomes() throws IOException {
+        // We need to create two bins with reference genomes, merge them, then save and load.
+        // Read in some useful DNA hits.
+        var hits = ProteinFinder.loadRefGenomes(new File("data", "hitList.tbl"));
+        // Create a bin group.
+        BinGroup binGroup = new BinGroup();
+        // Create a simple bin.
+        final String node1Id = "NODE_58_length_26115_cov_109.467_ID_1122748";
+        Bin bin1 = new Bin(node1Id, 1122748, 109.467);
+        // Make it significant.
+        var hit = hits.get(node1Id);
+        Genome refGenome = new Genome(new File("data", "548.1022.gto"));
+        bin1.setTaxInfo(hit, "test bin", refGenome);
+        // Create a new bin and merge the bins.
+        final String node2Id = "NODE_12_length_174929_cov_82.7452_ID_1122656";
+        Bin bin2 = new Bin(node2Id, 1122656, 82.7452);
+        hit = hits.get(node2Id);
+        refGenome = new Genome(new File("data", "548.1036.gto"));
+        bin2.setTaxInfo(hit, "test bin 2", refGenome);
+        binGroup.addBin(bin2);
+        binGroup.merge(bin1, bin2);
+        assertThat(bin1.getAllRefGenomes(), contains("548.1022", "548.1036"));
+        // Test json conversion.
+        JsonObject json = bin1.toJson();
+        Bin bin3 = new Bin(json);
+        assertThat(bin3.getAllRefGenomes(), contains("548.1022", "548.1036"));
+        assertThat(bin3.isClone(bin1), equalTo(true));
     }
 
 

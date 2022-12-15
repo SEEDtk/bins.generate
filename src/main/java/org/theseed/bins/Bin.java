@@ -5,6 +5,7 @@ package org.theseed.bins;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -46,8 +47,8 @@ public class Bin implements Comparable<Bin> {
     private String domain;
     /** genetic code of the bin */
     private int gc;
-    /** reference genome ID */
-    private String refGenome;
+    /** reference genome ID list, ordered from best to worst */
+    private List<String> refGenomes;
     /** set of contigs */
     private NavigableSet<Member> contigs;
     /** status of the bin (not saved to JSON) */
@@ -58,6 +59,8 @@ public class Bin implements Comparable<Bin> {
     private FastaOutputStream outStream;
     /** constant for an empty bin */
     private static final Set<JsonArray> noContigs = Collections.emptySet();
+    /** constant for no reference genomes */
+    private static final List<String> noRefGenomes = Collections.emptyList();
     /** default taxon ID */
     private static final int DEFAULT_TAX_ID = 0;
     /** default domain */
@@ -93,7 +96,7 @@ public class Bin implements Comparable<Bin> {
         GC(DEFAULT_GC),
         DOMAIN(DEFAULT_DOMAIN),
         TAXON_ID(DEFAULT_TAX_ID),
-        REF_GENOME(""),
+        REF_GENOME(noRefGenomes),
         FILE_NAME(null),
         CONTIGS(noContigs);
 
@@ -240,7 +243,7 @@ public class Bin implements Comparable<Bin> {
         this.taxonID = DEFAULT_TAX_ID;
         this.gc = DEFAULT_GC;
         this.domain = DEFAULT_DOMAIN;
-        this.refGenome = "";
+        this.refGenomes = new ArrayList<String>(5);
         this.outFile = null;
         this.outStream = null;
     }
@@ -252,7 +255,7 @@ public class Bin implements Comparable<Bin> {
      */
     public Bin(JsonObject json) {
         this.taxonID = json.getIntegerOrDefault(BinKeys.TAXON_ID);
-        this.refGenome = json.getStringOrDefault(BinKeys.REF_GENOME);
+        this.refGenomes = json.getCollectionOrDefault(BinKeys.REF_GENOME);
         this.gc = json.getIntegerOrDefault(BinKeys.GC);
         this.name = json.getStringOrDefault(BinKeys.NAME);
         this.domain = json.getStringOrDefault(BinKeys.DOMAIN);
@@ -278,10 +281,12 @@ public class Bin implements Comparable<Bin> {
         retVal.put(BinKeys.DOMAIN.getKey(), this.domain);
         retVal.put(BinKeys.GC.getKey(), this.gc);
         retVal.put(BinKeys.NAME.getKey(), this.name);
-        retVal.put(BinKeys.REF_GENOME.getKey(), this.refGenome);
         retVal.put(BinKeys.TAXON_ID.getKey(), this.taxonID);
         if (this.outFile != null)
             retVal.put(BinKeys.FILE_NAME.getKey(), this.outFile.getAbsolutePath());
+        // Form the reference genomes into a JSON array.
+        JsonArray refGenomeList = new JsonArray(this.refGenomes);
+        retVal.put(BinKeys.REF_GENOME.getKey(), refGenomeList);
         // Form the members into a JSON array.
         JsonArray members = new JsonArray();
         for (Member member : this.contigs)
@@ -335,9 +340,9 @@ public class Bin implements Comparable<Bin> {
      * @throws IOException
      */
     public FastaOutputStream setOutFile(File outFileName) throws IOException {
-        log.info("Bin {} will be written to {}.", this.name, outFile);
+        log.info("Bin {} will be written to {}.", this.name, outFileName);
         this.outFile = outFileName;
-        this.outStream = new FastaOutputStream(outFile);
+        this.outStream = new FastaOutputStream(outFileName);
         return this.outStream;
     }
 
@@ -410,11 +415,24 @@ public class Bin implements Comparable<Bin> {
     public void setTaxInfo(ProteinFinder.DnaHit recommendation, String suffix, Genome refGenome) {
         this.taxonID = recommendation.getSpeciesId();
         this.name = recommendation.getName();
-        this.refGenome = refGenome.getId();
+        this.refGenomes.clear();
+        this.refGenomes.add(refGenome.getId());
         if (! StringUtils.isBlank(suffix))
             this.name += " " + suffix;
         this.gc = refGenome.getGeneticCode();
         this.domain = refGenome.getDomain();
+    }
+
+    /**
+     * Add a reference genome to this bin.
+     *
+     * @param refGenomeId	ID of the reference genome to add
+     */
+    public void addRefGenome(String refGenomeId) {
+        // We can't use a set for the reference-genome list because the order matters,
+        // so we have to check to prevent duplicates.
+        if (! this.refGenomes.contains(refGenomeId))
+            this.refGenomes.add(refGenomeId);
     }
 
     /**
@@ -425,19 +443,32 @@ public class Bin implements Comparable<Bin> {
     }
 
     /**
-     * @return the ID of the reference genome
+     * @return the ID of the primary reference genome (or NULL if there is none)
      */
     public String getRefGenome() {
-        return this.refGenome;
+        String retVal;
+        if (this.refGenomes.isEmpty())
+            retVal = null;
+        else
+            retVal = this.refGenomes.get(0);
+        return retVal;
     }
 
     /**
-     * Merge another bin's contigs into this one.
+     * @return the IDs of all reference genomes in a list, with the primary first
+     */
+    public List<String> getAllRefGenomes() {
+        return this.refGenomes;
+    }
+
+    /**
+     * Merge another bin's data into this one.
      *
      * @param other		other bin to merge
      */
     protected void merge(Bin other) {
         this.contigs.addAll(other.contigs);
+        this.refGenomes.addAll(other.refGenomes);
     }
 
     /**
@@ -449,7 +480,7 @@ public class Bin implements Comparable<Bin> {
      */
     public boolean isClone(Bin other) {
         boolean retVal = this.domain.equals(other.domain) && this.gc == other.gc && this.name.equals(other.name)
-                && this.refGenome.equals(other.refGenome) && this.taxonID == other.taxonID
+                && this.refGenomes.equals(other.refGenomes) && this.taxonID == other.taxonID
                 && this.contigs.size() == other.contigs.size();
         if (retVal) {
             // Verify both bins have the same contigs.

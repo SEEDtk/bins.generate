@@ -70,8 +70,9 @@ import org.theseed.utils.ParseFailureException;
  * 					(default 10)
  * --kProt			protein kmer size (default 8)
  * --kDna			DNA kmer size (default 15)
- * --dangLen		mobile element kmer size (default 50)
+ * --dangLen		repeat region kmer size (default 50)
  * --recipe			method to be used for binning (default STANDARD)
+ * --binStrength	minimum kmer-hit differential to put a contig into a bin (default 10)
  *
  * The following command-line options relate to the PATRIC database.
  *
@@ -161,9 +162,13 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
     @Option(name = "--kDna", metaVar = "23", usage = "DNA kmer size")
     private int kDna;
 
-    /** mobile element kmer size */
-    @Option(name = "--dangLen", aliases = { "--danglen" }, usage = "mobile element kmer size")
+    /** repeat region kmer size */
+    @Option(name = "--dangLen", metaVar = "40", aliases = { "--danglen" }, usage = "repeat region kmer size")
     private int dangLen;
+
+    /** minimum kmer-hit differential to put a contig into a bin */
+    @Option(name = "--binStrength", metaVar = "5", usage = "minimum kmer-hit differential to put a contig into a bin")
+    private int binStrength;
 
     /** alternate URL for accessing the PATRIC data service used to download reference genomes */
     @Option(name = "--dataApiUrl", aliases = { "--dataAPIUrl" },
@@ -176,7 +181,7 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
     private String nameSuffix;
 
     /** method to use for binning */
-    @Option(name = "--recipt", usage = "method to use for binning")
+    @Option(name = "--recipe", aliases = { "--method" }, usage = "method to use for binning")
     private BinningMethod.Type methodType;
 
     /** name of the input FASTA file */
@@ -206,6 +211,8 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
         this.minLen = 0.5;
         this.nameSuffix = "clonal population";
         this.xLimit = 30;
+        this.binStrength = 10;
+        this.methodType = BinningMethod.Type.STANDARD;
     }
 
     @Override
@@ -252,6 +259,9 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
         if (this.xLimit < 0)
             throw new ParseFailureException("Ambiguity-character limit (xLimit) cannot be negative.");
         this.parms.setXLimit(this.xLimit);
+        if (this.binStrength < 1)
+            throw new ParseFailureException("Bin strength cannot be less than 1.");
+        this.parms.setBinStrength(this.binStrength);
         log.info("Tuning parameters are {}.", this.parms);
         // Check the name suffix.
         if (! StringUtils.isAsciiPrintable(this.nameSuffix))
@@ -307,8 +317,10 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
             this.binGroup = previous.reload();
         }
         // Run the remaining phases.
-        while (phaseIdx < this.phases.size())
+        while (phaseIdx < this.phases.size()) {
             this.phases.get(phaseIdx).run();
+            phaseIdx++;
+        }
     }
 
     @Override

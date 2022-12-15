@@ -33,9 +33,10 @@ public class BinParms {
     private int kProt;
     // DNA kmer length */
     private int kDna;
-    /** mobile element kmer length */
+    /** repeat-region kmer length */
     private int dangLen;
-
+    /** hit-differential for contig assignment */
+    private int binStrength;
 
     /**
      * Generate a binning parameter set with default parameters.
@@ -53,6 +54,7 @@ public class BinParms {
         this.setKProt(8);
         this.setKDna(15);
         this.setDangLen(50);
+        this.setBinStrength(10);
     }
 
     /**
@@ -265,14 +267,14 @@ public class BinParms {
     }
 
     /**
-     * @return the mobile element kmer length
+     * @return the repeat-region kmer length
      */
     public int getDangLen() {
         return this.dangLen;
     }
 
     /**
-     * Specify a new mobile element kmer length.
+     * Specify a new repeat-region kmer length.
      *
      * @param danglen the dangLen to set
      *
@@ -283,13 +285,33 @@ public class BinParms {
         return this;
     }
 
+    /**
+     * @return the hit-differential minimum
+     */
+    public int getBinStrength() {
+        return this.binStrength;
+    }
+
+    /**
+     * Specify a new hit-differential minimum.
+     *
+     * @param binStrength	the bin strength to set
+     *
+     * @return this object, for fluent invocation
+     */
+    public BinParms setBinStrength(int binStrength) {
+        this.binStrength = binStrength;
+        return this;
+    }
+
+
     @Override
     public String toString() {
         return String.format(
                 "--lenFilter=%s --binLenFilter=%s --covgFilter=%s --binCovgFilter=%s, --xLimit=%s  --maxEValue=%s" +
-                " --refMaxEValue=%s --minLen=%s --maxGap=%s --kProt=%s --kDna=%s --dangLen=%s",
+                " --refMaxEValue=%s --minLen=%s --maxGap=%s --kProt=%s --kDna=%s --dangLen=%s --binStrength=%s",
                 this.lenFilter, this.binLenFilter, this.covgFilter, this.binCovgFilter, this.xLimit, this.maxEValue,
-                this.refMaxEValue, this.minLen, this.maxGap, this.kProt, this.kDna, this.dangLen);
+                this.refMaxEValue, this.minLen, this.maxGap, this.kProt, this.kDna, this.dangLen, this.binStrength);
     }
 
 }

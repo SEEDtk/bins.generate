@@ -55,6 +55,8 @@ public class SourPhase extends BinPhase {
 
     @Override
     protected void runPhase() throws IOException, InterruptedException {
+        // Get the bin group.
+        BinGroup binGroup = this.getBinGroup();
         // Find the SOUR proteins in the reduced FASTA file output by the load phase.
         File reducedFastaFile = this.getOutFile(LoadPhase.REDUCED_FASTA_NAME);
         ProteinFinder finder = this.getFinder();
@@ -64,6 +66,7 @@ public class SourPhase extends BinPhase {
             // Here no SOUR proteins were found.
             log.warn("No SOUR proteins could be found in this sample.");
         } else {
+            binGroup.count("sour-proteins-found", soursFound.size());
             // Checkpoint the results for debugging purposes.
             ProteinFinder.saveSeedProteins(soursFound, this.getOutFile(SOUR_MAP_NAME));
             // Now assign the reference genomes.
@@ -73,6 +76,7 @@ public class SourPhase extends BinPhase {
                 // Here we can't bin, because everything is too far away from our reference genome set.
                 log.warn("No reference genomes could be found for this sample.");
             } else {
+                binGroup.count("sour-refGenomes-assigned", refsFound.size());
                 // Checkpoint these results as well.
                 ProteinFinder.saveRefGenomes(refsFound, this.getOutFile(REF_GENOME_MAP_NAME));
                 // Now we have a reference genome assigned to each contig, and it is associated with a score.
@@ -82,11 +86,10 @@ public class SourPhase extends BinPhase {
                     int taxId = refHit.getSpeciesId();
                     List<ProteinFinder.DnaHit> hitList = speciesMap.computeIfAbsent(taxId, x -> new ArrayList<ProteinFinder.DnaHit>(5));
                     hitList.add(refHit);
+                    binGroup.count("sour-hit-" + refHit.getRoleId());
                 }
                 // For each species we need to pick the best reference genome and assign it to all the contigs, which are then merged
-                // into a single per-species bin.  We are going to work with bins, so we need the bin group.  We also need the name
-                // suffix so we can name the bins.
-                BinGroup binGroup = this.getBinGroup();
+                // into a single per-species bin.  We need the name suffix so we can name the bins.
                 String nameSuffix = this.getNameSuffix();
                 // Loop through the species lists found.
                 for (var speciesHitList : speciesMap.values()) {
@@ -99,12 +102,14 @@ public class SourPhase extends BinPhase {
                     Genome refGenome = this.getGenome(refGenomeId);
                     Bin masterBin = binGroup.getContigBin(bestHit.getContigId());
                     masterBin.setTaxInfo(bestHit, nameSuffix, refGenome);
+                    binGroup.count("sour-species-found");
                     // Loop through the remaining hits, merging the contigs into the master.
                     while (iter.hasNext()) {
                         var hit = iter.next();
                         Bin bin = binGroup.getContigBin(hit.getContigId());
-                        bin.setTaxInfo(hit, nameSuffix, refGenome);
                         binGroup.merge(masterBin, bin);
+                        masterBin.addRefGenome(hit.getRefId());
+                        binGroup.count("sour-contig-merged");
                     }
                     log.info("{} contigs in starter bin {} using reference genome {}.", speciesHitList.size(), bestHit.getContigId(),
                             refGenome);

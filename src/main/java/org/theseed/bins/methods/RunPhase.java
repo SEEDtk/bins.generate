@@ -27,7 +27,7 @@ public class RunPhase extends BinPhase {
     }
 
     @Override
-    protected void runPhase() {
+    protected void runPhase() throws Exception {
         // Get the significant bins.
         var starterBins = this.getBinGroup().getSignificantBins();
         // Run the binning method if there are any.

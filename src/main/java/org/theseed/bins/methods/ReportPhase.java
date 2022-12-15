@@ -6,7 +6,9 @@ package org.theseed.bins.methods;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Collection;
 
+import org.apache.commons.lang3.StringUtils;
 import org.theseed.bins.Bin;
 import org.theseed.bins.BinGroup;
 
@@ -41,7 +43,8 @@ public class ReportPhase extends BinPhase {
         BinGroup binGroup = this.getBinGroup();
         // The first task is to merge all the unplaced contigs into a single bin.
         Bin virtualBin = null;
-        for (Bin bin : binGroup) {
+        Collection<Bin> unplacedBins = binGroup.getUnplacedBins();
+        for (Bin bin : unplacedBins) {
             if (! bin.isSignificant()) {
                 // Here we have an unplaced contig.  If it is the first, it becomes the
                 // virtual bin.  Otherwise, we add it to the virtual bin.
@@ -58,9 +61,11 @@ public class ReportPhase extends BinPhase {
         log.info("Writing summary report to {}.", outFile);
         try (PrintWriter writer = new PrintWriter(outFile)) {
             writer.println("bin_name\tspecies\tref_genome_id\tcoverage\tdna_size");
-            for (Bin bin : binGroup)
-                writer.format("%s\t%d\t%s\t%6.2f\t%d%n", bin.getName(), bin.getTaxonID(), bin.getRefGenome(),
+            for (Bin bin : binGroup) {
+                String refGenomes = StringUtils.join(bin.getAllRefGenomes(), ", ");
+                writer.format("%s\t%d\t%s\t%6.2f\t%d%n", bin.getName(), bin.getTaxonID(), refGenomes,
                         bin.getCoverage(), bin.getLen());
+            }
         }
         // Now write out the contigs to the FASTA files.
         binGroup.write(this.getInFile(), this.getOutDir());

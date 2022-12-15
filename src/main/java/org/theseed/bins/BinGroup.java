@@ -9,12 +9,11 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -46,7 +45,7 @@ public class BinGroup implements Iterable<Bin> {
     /** map of contig IDs to bins */
     private Map<String, Bin> contigMap;
     /** set of bins */
-    private SortedSet<Bin> binList;
+    private List<Bin> binList;
     /** statistics about the bin group */
     private CountMap<String> stats;
     /** contig file name */
@@ -58,7 +57,7 @@ public class BinGroup implements Iterable<Bin> {
     /** name of the unplaced-contig output FASTA file */
     public static final String UNPLACED_FASTA_NAME = "unbinned.fasta";
     /** format string for bin output FASTA file name */
-    public static final String BIN_OUTPUT_FASTA = "bin.%4d.fasta";
+    public static final String BIN_OUTPUT_FASTA = "bin.%04d.fasta";
 
     private static enum GroupKeys implements JsonKey {
         COUNTS(noCounts),
@@ -98,7 +97,7 @@ public class BinGroup implements Iterable<Bin> {
      */
     protected void setup(int hashSize) {
         this.contigMap = new HashMap<String, Bin>(hashSize * 4 / 3 + 1);
-        this.binList = new TreeSet<Bin>();
+        this.binList = new ArrayList<Bin>(hashSize);
         this.stats = new CountMap<String>();
         this.inputFile = null;
     }
@@ -177,7 +176,9 @@ public class BinGroup implements Iterable<Bin> {
             this.inputFile = fastaFile;
             log.info("Reading contigs from {}.", fastaFile);
             int seedUsableCount = 0;
+            int contigCount = 0;
             for (Sequence seq : inStream) {
+                contigCount++;
                 Bin seqBin = filter.computeBin(seq, this.stats);
                 if (seqBin.getStatus() == Bin.Status.SEED_USABLE) {
                     // Here the sequence is good enough for the SOUR protein search.
@@ -189,8 +190,8 @@ public class BinGroup implements Iterable<Bin> {
                     this.addBin(seqBin);
                 }
             }
-            log.info("{} SOUR protein search sequences written to {}, {} saved for binning.",
-                    seedUsableCount, this.binList.size());
+            log.info("{} SOUR protein search sequences written of {} read from {}, {} saved for binning.",
+                    seedUsableCount, contigCount, reducedFile, this.binList.size());
         }
     }
 
@@ -229,6 +230,14 @@ public class BinGroup implements Iterable<Bin> {
      */
     public List<Bin> getSignificantBins() {
         List<Bin> retVal = this.binList.stream().filter(x -> x.isSignificant()).collect(Collectors.toList());
+        return retVal;
+    }
+
+    /**
+     * @return a collection of the insignificant (unplaced-contig) bins
+     */
+    public List<Bin> getUnplacedBins() {
+        List<Bin> retVal = this.binList.stream().filter(x -> ! x.isSignificant()).collect(Collectors.toList());
         return retVal;
     }
 

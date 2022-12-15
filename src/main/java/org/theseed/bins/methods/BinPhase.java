@@ -132,7 +132,7 @@ public abstract class BinPhase {
     public void run() throws Exception {
         log.info("Executing {} phase.", this);
         this.runPhase();
-        log.info("{} bins and unplaced contigs identified at end of {} phase.", this.processor.getBinGroup().size(), this);
+        log.info("{} bins/unplaced-contigs identified at end of {} phase.", this.processor.getBinGroup().size(), this);
         this.finish();
     }
 
