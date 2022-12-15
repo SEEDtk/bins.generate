@@ -138,8 +138,7 @@ public class BinGroup implements Iterable<Bin> {
     }
 
     /**
-     * Load a bin group from a FASTA file.  We will compute the coverage here, and output the contigs eligible for the
-     * seed-protein search to the specified output file.
+     * Load a bin group from a FASTA file.
      *
      * @param fastaFile		input file containing contigs from an assembly
      * @param parms			tuning parameters for contig filtering
@@ -150,6 +149,22 @@ public class BinGroup implements Iterable<Bin> {
     public BinGroup(File fastaFile, BinParms parms, File reducedFile) throws IOException {
         // Initialize the object structures.
         this.setup(1000);
+        // Load the FASTA file.
+        this.loadFromFasta(fastaFile, parms, reducedFile);
+    }
+
+    /**
+     * Load this bin group from a FASTA file.  We will compute the coverage here, and output the contigs eligible for the
+     * SOUR protein search to the specified output file.
+     *
+     * @param fastaFile		input file containing contigs from an assembly
+     * @param parms			tuning parameters for contig filtering
+     * @param reducedFile	output file for seed-search contigs
+     *
+     * @throws IOException
+     */
+    public void loadFromFasta(File fastaFile, BinParms parms, File reducedFile)
+            throws IOException, FileNotFoundException {
         // Create the coverage filter.
         ContigFilter filter = new ContigFilter(parms);
         // Open the output file and connect to the input file.
@@ -161,7 +176,7 @@ public class BinGroup implements Iterable<Bin> {
             for (Sequence seq : inStream) {
                 Bin seqBin = filter.computeBin(seq, this.stats);
                 if (seqBin.getStatus() == Bin.Status.SEED_USABLE) {
-                    // Here the sequence is good enough for the seed-protein search.
+                    // Here the sequence is good enough for the SOUR protein search.
                     outStream.write(seq);
                     seedUsableCount++;
                 }
@@ -170,7 +185,7 @@ public class BinGroup implements Iterable<Bin> {
                     this.addBin(seqBin);
                 }
             }
-            log.info("{} seed-search sequences written to {}, {} saved for binning.",
+            log.info("{} SOUR protein search sequences written to {}, {} saved for binning.",
                     seedUsableCount, this.binList.size());
         }
     }
@@ -189,7 +204,7 @@ public class BinGroup implements Iterable<Bin> {
     /**
      * Merge two bins.
      *
-     * @param bin		target bin
+     * @param bin1		target bin
      * @param bin2		bin to merge into the first bin
      */
     public void merge(Bin bin1, Bin bin2) {
@@ -264,21 +279,26 @@ public class BinGroup implements Iterable<Bin> {
     }
 
     /**
-     * Write all the unplaced contigs to a FASTA file.
+     * Write all the contigs to FASTA files in the specified directory.
      *
-     * @param inFile	FASTA file containing the contigs
-     * @param outFile	FASTA file to contain the unplaced contigs
+     * @param inFile	input FASTA file containing the contigs
+     * @param outDir	output directory to contain the FASTA files
      *
      * @throws IOException
      */
-    public void writeUnplaced(File inFile, File outFile) throws IOException {
+    public void write(File inFile, File outDir) throws IOException {
+        // Get counters for the various contig dispositions.
+        int outCount = 0;
+        int skipCount = 0;
+        int placeCount = 0;
+        // This is the number of open bins.  It is used to create output file names for the bins.
+        int openCount = 0;
         // Open the two files.
-        log.info("Transferring unplaced sequences from {} to {}.", inFile, outFile);
+        log.info("Writing all the binnable contigs from {} to {}.", inFile, outDir);
+        // Compute the output file for the unplaced contigs.
+        File outFile = new File(outDir, "unbinned.fasta");
         try (FastaInputStream inStream = new FastaInputStream(inFile);
                 FastaOutputStream outStream = new FastaOutputStream(outFile)) {
-            int outCount = 0;
-            int skipCount = 0;
-            int placeCount = 0;
             // Read the input and copy to the output if warranted.
             for (Sequence seq : inStream) {
                 Bin contigBin = this.contigMap.get(seq.getLabel());
@@ -286,17 +306,30 @@ public class BinGroup implements Iterable<Bin> {
                     // Here the sequence was filtered out prior to binning.
                     skipCount++;
                 } else if (contigBin.isSignificant()) {
-                    // Here the contig is placed in a bin.
+                    // Here the contig is placed in a bin.  Insure the bin has an output stream.
+                    if (! contigBin.isOpen()) {
+                        // We need to create an output file for the bin here.
+                        openCount++;
+                        File binFile = new File(outDir, String.format("bin%d.fasta", openCount));
+                        contigBin.setOutFile(binFile);
+                    }
+                    // Write the contig to the output stream.
+                    contigBin.writeSequence(seq);
                     placeCount++;
                 } else {
-                    // Here the contig should be output.
+                    // Here the contig should be output to the unplaced-contig file.
                     outStream.write(seq);
                     outCount++;
                 }
             }
-            log.info("{} contigs are placed, {} have been rejected, {} written to {}.", placeCount, skipCount, outCount, outFile);
+        } finally {
+            log.info("Cleaning up open bin streams.");
+            // Here we have to close any output streams open for bins.
+            this.binList.forEach(x -> x.close());
         }
+        log.info("{} contigs are in bins, {} have been rejected, {} written to {}.", placeCount, skipCount, outCount, outFile);
     }
+
     /**
      * Increment a statistic.
      *

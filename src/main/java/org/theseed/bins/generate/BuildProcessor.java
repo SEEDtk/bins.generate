@@ -20,12 +20,12 @@ import org.theseed.utils.BaseProcessor;
 import org.theseed.utils.ParseFailureException;
 
 /**
- * This command builds a protein finder.  Building the seed protein file is fairly fast, but the reference-genome
+ * This command builds a protein finder.  Building the SOUR protein file is fairly fast, but the reference-genome
  * DNA files can be very expensive.  If files already exist in the output directory, they will not be rebuilt.
  * Use "--clear" to force a rebuild.
  *
  * The positional parameters are the name of the output directory, the name of the role definition file to use, the genome
- * source (file or directory) containing the genomes to use for the seed proteins, the name of a tab-delimited file
+ * source (file or directory) containing the genomes to use for the SOUR proteins, the name of a tab-delimited file
  * containing the IDs of the eligible reference genomes in its first column.
  *
  * The command-line options are as follows.
@@ -33,7 +33,7 @@ import org.theseed.utils.ParseFailureException;
  * -h	display command-line usage
  * -v	display more frequent log messages
  *
- * --source		type of genome source for the seed-protein genomes
+ * --source		type of genome source for the SOUR protein genomes
  * --clear		erase the output directory before processing
  *
  * @author Bruce Parrello
@@ -54,7 +54,7 @@ public class BuildProcessor extends BaseProcessor {
     // COMMAND-LINE OPTIONS
 
     /** genome source type */
-    @Option(name = "--source", usage = "type of genome source for seed proteins")
+    @Option(name = "--source", usage = "type of genome source for SOUR proteins")
     private GenomeSource.Type sourceType;
 
     /** if specified, the output directory will be erased before processing */
@@ -66,11 +66,11 @@ public class BuildProcessor extends BaseProcessor {
     private File outDir;
 
     /** name of the role definition file */
-    @Argument(index = 1, metaVar = "roles.for.proteins", usage = "name of the role definition file for the seed proteins")
+    @Argument(index = 1, metaVar = "roles.for.proteins", usage = "name of the role definition file for the SOUR proteins")
     private File roleFile;
 
-    /** name of the genome source for the seed protein genomes */
-    @Argument(index = 2, metaVar = "genomeDir", usage = "name of the genome source containing the genomes to use for the seed protein")
+    /** name of the genome source for the SOUR protein genomes */
+    @Argument(index = 2, metaVar = "genomeDir", usage = "name of the genome source containing the genomes to use for the SOUR protein")
     private File genomeDir;
 
     /** name of the input file for the reference genome IDs */
@@ -103,11 +103,11 @@ public class BuildProcessor extends BaseProcessor {
         // Insure the role file is readable.
         if (! this.roleFile.canRead())
             throw new FileNotFoundException("Role file " + this.roleFile + " is not found or unreadable.");
-        // Connect to the seed-protein genome source.
+        // Connect to the SOUR protein genome source.
         if (! this.genomeDir.exists())
-            throw new FileNotFoundException("Seed-protein genome source " + this.genomeDir + " is not found.");
+            throw new FileNotFoundException("SOUR protein genome source " + this.genomeDir + " is not found.");
         this.genomes = this.sourceType.create(this.genomeDir);
-        log.info("{} seed-protein genomes found in {}.", this.genomes.size(), this.genomeDir);
+        log.info("{} SOUR protein genomes found in {}.", this.genomes.size(), this.genomeDir);
         // Clear the output directory if requested.
         if (this.outDir.isDirectory() && this.clearFlag) {
             log.info("Erasing output directory {}.", this.outDir);
@@ -121,8 +121,8 @@ public class BuildProcessor extends BaseProcessor {
 
     @Override
     protected void runCommand() throws Exception {
-        // Create the seed-protein FASTA.
-        log.info("Creating seed-protein database.");
+        // Create the SOUR protein FASTA.
+        log.info("Creating SOUR protein database.");
         this.finder.createProteinFile(this.genomes);
         // Create the reference-genome finder.
         log.info("Computing reference-genome FASTA files.");

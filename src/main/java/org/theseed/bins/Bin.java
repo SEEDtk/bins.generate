@@ -73,7 +73,7 @@ public class Bin implements Comparable<Bin> {
         BAD,
         /** use the contig for binning only */
         NORMAL,
-        /** use the contig for binning and for the seed protein search */
+        /** use the contig for binning and for the SOUR protein search */
         SEED_USABLE;
 
         /**
@@ -330,12 +330,22 @@ public class Bin implements Comparable<Bin> {
      *
      * @param outFile	name of the output file
      *
+     * @return the open output stream for the bin
+     *
      * @throws IOException
      */
-    public void setOutFile(File outFileName) throws IOException {
+    public FastaOutputStream setOutFile(File outFileName) throws IOException {
         log.info("Bin {} will be written to {}.", this.name, outFile);
         this.outFile = outFileName;
         this.outStream = new FastaOutputStream(outFile);
+        return this.outStream;
+    }
+
+    /**
+     * @return TRUE if this bin has an open output stream, else FALSE
+     */
+    protected boolean isOpen() {
+        return this.outStream != null;
     }
 
     /**

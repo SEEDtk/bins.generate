@@ -91,6 +91,7 @@ class TestBinObject {
         // Try JSON conversion again with an output file.
         File outFileX = new File("data", "bin.ser");
         bin1.setOutFile(outFileX);
+        bin1.close();
         binJson = bin1.toJson();
         bin3 = new Bin(binJson);
         assertThat(bin3.getOutFile().getAbsolutePath(), equalTo(outFileX.getAbsolutePath()));
@@ -134,9 +135,10 @@ class TestBinObject {
             assertThat(binx.isSignificant(), equalTo(false));
         }
         // Test sequence writer.
-        File outFile = new File("data", "fasta.ser");
+        File outDir = new File("data", "bins");
         File inFile = new File("data", "BigSample.fasta");
-        binGroup.writeUnplaced(inFile, outFile);
+        binGroup.write(inFile, outDir);
+        File outFile = new File(outDir, "unbinned.fasta");
         try (FastaInputStream readBackStream = new FastaInputStream(outFile)) {
             int counter = 0;
             for (Sequence seq : readBackStream) {
@@ -146,7 +148,19 @@ class TestBinObject {
             }
             assertThat(counter, equalTo(unplacedNodes.size()));
         }
-        // Add some counts and the input file.
+        File binFile = new File(outDir, "bin1.fasta");
+        try (FastaInputStream readBackStream = new FastaInputStream(binFile)) {
+            int counter = 0;
+            for (Sequence seq : readBackStream) {
+                String seqLabel = seq.getLabel();
+                assertThat(seqLabel, placedNodes, hasItem(seqLabel));
+                counter++;
+            }
+            assertThat(counter, equalTo(placedNodes.size()));
+        }
+        binFile = new File(outDir, "bin2.fasta");
+        assertThat(binFile.exists(), equalTo(false));
+        // Add some counts and add the input file.
         binGroup.count("abc");
         binGroup.count("xyz", 4);
         binGroup.setInputFile(inFile);

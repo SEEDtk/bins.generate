@@ -17,24 +17,24 @@ public class FinderTest {
     protected static Logger log = LoggerFactory.getLogger(FinderTest.class);
 
     /**
-     * Perform a full-scale test on the finder.  This is only possible if FINDER_PATH has been set to point to
-     * a directory with finder files in it.  The finder files are huge and can't be stored in GitHub.
+     * Perform a full-scale test on the finder.  This is only possible if SEEDtk_TEST_DATA has been set and
+     * the "Finder" subdirectory has finder files in it.  The finder files are huge and can't be stored in GitHub.
      *
      * @throws IOException
      * @throws InterruptedException
      */
     @Test
     public void bigFindingTest() throws IOException, InterruptedException {
-        String finderDirName = System.getenv("FINDER_PATH");
-        if (! StringUtils.isBlank(finderDirName)) {
-            File finderDir = new File(finderDirName);
+        String testDirName = System.getenv("SEEDtk_TEST_DATA");
+        if (! StringUtils.isBlank(testDirName)) {
+            File finderDir = new File(testDirName, "Finder");
             File testFile = new File(finderDir, "PhenTrnaSyntAlph.fna");
             if (testFile.exists()) {
                 log.info("Performing finder DNA species assignment test.");
-                // Find the seed proteins in BigSample.
+                // Find the SOUR proteins in BigSample.
                 var finder = new ProteinFinder(finderDir);
                 File dnaFile1 = new File("data", "BigSample.fasta");
-                var rolesFound = finder.findSeedProteins(dnaFile1);
+                var rolesFound = finder.findSourProteins(dnaFile1);
                 // Test saving and loading the protein map.
                 File protFile = new File("data", "rolesFound.ser");
                 ProteinFinder.saveSeedProteins(rolesFound, protFile);

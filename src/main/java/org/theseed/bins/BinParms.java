@@ -11,22 +11,30 @@ package org.theseed.bins;
 public class BinParms {
 
     // FIELDS
-    /** minimum length for a seed-protein search contig */
+    /** minimum length for a SOUR protein search contig */
     private int lenFilter;
     /** minimum length for a binning contig */
     private int binLenFilter;
-    /** minimum coverage for a seed-protein search contig */
+    /** minimum coverage for a SOUR protein search contig */
     private double covgFilter;
     /** minimum coverage for a binning contig */
     private double binCovgFilter;
     /** maximum number of ambiguity characters in a row for a contig */
     private int xLimit;
-    /** maximum e-value for BLAST hits during the seed-protein search */
+    /** maximum e-value for BLAST hits during the SOUR protein search */
     private double maxEValue;
     /** maximum e-value for BLAST hits during the reference-genome search */
     private double refMaxEValue;
     /** minimum fraction of a protein that must match in a BLAST hit */
     private double minLen;
+    /** maximum allowable gap for merging during the SOUR protein search */
+    private int maxGap;
+    /** protein kmer length */
+    private int kProt;
+    // DNA kmer length */
+    private int kDna;
+    /** mobile element kmer length */
+    private int dangLen;
 
 
     /**
@@ -41,17 +49,40 @@ public class BinParms {
         this.setMaxEValue(1e-20);
         this.setRefMaxEValue(1e-10);
         this.setMinLen(0.5);
+        this.setMaxGap(600);
+        this.setKProt(8);
+        this.setKDna(15);
+        this.setDangLen(50);
     }
 
     /**
-     * @return the minimum length for a seed-protein search contig
+     * @return the maximum gap for hit-merging in the SOUR protein search
+     */
+    public int getMaxGap() {
+        return this.maxGap;
+    }
+
+    /**
+     * Specify a new maximum gap for hit-merging in the SOUR protein search.
+     *
+     * @param maxGap	the maxGap to set
+     *
+     * @return this object, for fluent invocation
+     */
+    public BinParms setMaxGap(int maxGap) {
+        this.maxGap = maxGap;
+        return this;
+    }
+
+    /**
+     * @return the minimum length for a SOUR protein search contig
      */
     public int getLenFilter() {
         return this.lenFilter;
     }
 
     /**
-     * Specify the minimum length for a seed-protein search contig.
+     * Specify the minimum length for a SOUR protein search contig.
      *
      * @param lenFilter the lenFilter to set
      *
@@ -82,14 +113,14 @@ public class BinParms {
     }
 
     /**
-     * @return the minimum coverage for a seed-protein search contig
+     * @return the minimum coverage for a SOUR protein search contig
      */
     public double getCovgFilter() {
         return this.covgFilter;
     }
 
     /**
-     * Specify the minimum coverage for a seed-protein search contig
+     * Specify the minimum coverage for a SOUR protein search contig
      *
      * @param covgFilter the covgFilter to set
      *
@@ -139,14 +170,14 @@ public class BinParms {
     }
 
     /**
-     * @return the maximum e-value for BLAST hits during the seed-protein search
+     * @return the maximum e-value for BLAST hits during the SOUR protein search
      */
     public double getMaxEValue() {
         return this.maxEValue;
     }
 
     /**
-     * Specify the maximum e-value for BLAST hits during the seed-protein search.
+     * Specify the maximum e-value for BLAST hits during the SOUR protein search.
      *
      * @param maxEValue the maxEValue to set
      *
@@ -195,5 +226,70 @@ public class BinParms {
         return this;
     }
 
+    /**
+     * @return the protein kmer size
+     */
+    public int getKProt() {
+        return this.kProt;
+    }
+
+    /**
+     * Specify a new protein kmer size.
+     *
+     * @param kProt 	the kProt to set
+     *
+     * @return this object, for fluent invocation
+     */
+    public BinParms setKProt(int kProt) {
+        this.kProt = kProt;
+        return this;
+    }
+
+    /**
+     * @return the DNA kmer size
+     */
+    public int getKDna() {
+        return this.kDna;
+    }
+
+    /**
+     * Specify a new DNA kmer size.
+     *
+     * @param kDna the kDna to set
+     *
+     * @return this object, for fluent invocation
+     */
+    public BinParms setKDna(int kDna) {
+        this.kDna = kDna;
+        return this;
+    }
+
+    /**
+     * @return the mobile element kmer length
+     */
+    public int getDangLen() {
+        return this.dangLen;
+    }
+
+    /**
+     * Specify a new mobile element kmer length.
+     *
+     * @param danglen the dangLen to set
+     *
+     * @return this object, for fluent invocation
+     */
+    public BinParms setDangLen(int danglen) {
+        this.dangLen = danglen;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return String.format(
+                "--lenFilter=%s --binLenFilter=%s --covgFilter=%s --binCovgFilter=%s, --xLimit=%s  --maxEValue=%s" +
+                " --refMaxEValue=%s --minLen=%s --maxGap=%s --kProt=%s --kDna=%s --dangLen=%s",
+                this.lenFilter, this.binLenFilter, this.covgFilter, this.binCovgFilter, this.xLimit, this.maxEValue,
+                this.refMaxEValue, this.minLen, this.maxGap, this.kProt, this.kDna, this.dangLen);
+    }
 
 }

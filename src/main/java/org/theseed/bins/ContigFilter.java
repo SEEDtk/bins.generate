@@ -12,7 +12,7 @@ import org.theseed.sequence.Sequence;
 /**
  * This is a contig filter for binning.  It provides methods for creating a Bin object from a contig
  * sequence and for determining if a bin should be discarded, used for binning only, or used for the
- * seed-protein search.
+ * SOUR protein search.
  *
  * @author Bruce Parrello
  *
