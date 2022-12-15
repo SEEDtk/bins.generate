@@ -148,7 +148,7 @@ class TestBinObject {
             }
             assertThat(counter, equalTo(unplacedNodes.size()));
         }
-        File binFile = new File(outDir, "bin1.fasta");
+        File binFile = new File(outDir, "bin.0001.fasta");
         try (FastaInputStream readBackStream = new FastaInputStream(binFile)) {
             int counter = 0;
             for (Sequence seq : readBackStream) {
@@ -158,7 +158,7 @@ class TestBinObject {
             }
             assertThat(counter, equalTo(placedNodes.size()));
         }
-        binFile = new File(outDir, "bin2.fasta");
+        binFile = new File(outDir, "bin.0002.fasta");
         assertThat(binFile.exists(), equalTo(false));
         // Add some counts and add the input file.
         binGroup.count("abc");

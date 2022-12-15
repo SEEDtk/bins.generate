@@ -528,4 +528,14 @@ public class Bin implements Comparable<Bin> {
         return retVal;
     }
 
+    /**
+     * Specify that this bin is the virtual bin to contain the unplaced contigs.
+     *
+     * @param binFile	output file for unplaced contigs
+     */
+    public void setVirtual(File binFile) {
+        this.name = "Residual Contigs";
+        this.outFile = binFile;
+    }
+
 }

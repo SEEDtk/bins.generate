@@ -3,17 +3,15 @@
  */
 package org.theseed.bins.methods;
 
-import java.io.File;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.theseed.bins.BinGroup;
-import org.theseed.bins.BinParms;
+import org.theseed.bins.Bin;
 
 /**
  * This object represents a binning method.  It operates on a BinGroup with pre-selected starter bins, then
  * each method type uses its own rules to assign the leftover contigs to bins.
- *
  *
  * @author Bruce Parrello
  *
@@ -23,6 +21,8 @@ public abstract class BinningMethod {
     // FIELDS
     /** logging facility */
     protected static Logger log = LoggerFactory.getLogger(BinningMethod.class);
+    /** controlling command processor */
+    protected BinPhase.IParms processor;
 
     /**
      * This enum contains the different binning method types.
@@ -31,7 +31,7 @@ public abstract class BinningMethod {
         /** protein-based kmers for bin assignment */
         STANDARD {
             @Override
-            public BinningMethod create(BinParms parms, File outDir) {
+            public BinningMethod create(BinPhase.IParms processor) {
                 // TODO code for create standard binning
                 return null;
             }
@@ -39,7 +39,7 @@ public abstract class BinningMethod {
         /** do not bin, merely estimate species population */
         REPORT {
             @Override
-            public BinningMethod create(BinParms parms, File outDir) {
+            public BinningMethod create(BinPhase.IParms processor) {
                 // TODO code for create report-only binning
                 return null;
             }
@@ -47,7 +47,7 @@ public abstract class BinningMethod {
         /** DNA-based kmers for bin assignment */
         STRICT {
             @Override
-            public BinningMethod create(BinParms parms, File outDir) {
+            public BinningMethod create(BinPhase.IParms processor) {
                 // TODO code for create DNA-based binning
                 return null;
             }
@@ -56,28 +56,33 @@ public abstract class BinningMethod {
         /**
          * Create a binning engine for this type.
          *
-         * @param parms		binning parameter object
-         * @param outDir 	output directory for the bin data
+         * @processor	controlling command processor
          */
-        public abstract BinningMethod create(BinParms parms, File outDir);
+        public abstract BinningMethod create(BinPhase.IParms processor);
 
     }
 
     /**
-     * Run the binning process on a bin group and save the group to the
-     * specified output file.
+     * Construct a binning method.
      *
-     * @param binGroup		binning group to process
+     * @param controller		controlling command processor
      */
-    public void run(BinGroup binGroup) {
-        this.runMethod(binGroup);
+    public BinningMethod(BinPhase.IParms controller) {
+        this.processor = controller;
+    }
+
+    /**
+     * Run the binning process.
+     *
+     * @param starterBins	list of significant bins set up as starters
+     */
+    public void run(List<Bin> starterBins) {
+        this.runMethod(starterBins);
     }
 
     /**
      * Use this method to assign contigs to bins.
-     *
-     * @param binGroup		binning group containing the contigs and starter bins
      */
-    protected abstract void runMethod(BinGroup binGroup);
+    protected abstract void runMethod(List<Bin> starterBins);
 
 }

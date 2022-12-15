@@ -28,8 +28,11 @@ public class RunPhase extends BinPhase {
 
     @Override
     protected void runPhase() {
-
-        // TODO code for BINNING runPhase
+        // Get the significant bins.
+        var starterBins = this.getBinGroup().getSignificantBins();
+        // Run the binning method if there are any.
+        if (! starterBins.isEmpty())
+            this.getEngine().run(starterBins);
     }
 
 }

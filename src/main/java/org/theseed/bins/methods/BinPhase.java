@@ -223,6 +223,13 @@ public abstract class BinPhase {
     }
 
     /**
+     * @return the binning engine
+     */
+    protected BinningMethod getEngine() {
+        return this.processor.getEngine();
+    }
+
+    /**
      * @return the genome with the specified ID
      *
      * @param genomeId	ID of the desired genome
@@ -231,6 +238,13 @@ public abstract class BinPhase {
      */
     protected Genome getGenome(String genomeId) throws IOException {
         return this.processor.getGenome(genomeId);
+    }
+
+    /**
+     * @return the output directory name
+     */
+    protected File getOutDir() {
+        return this.processor.getOutDir();
     }
 
 

@@ -264,7 +264,7 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
         if (! this.inFile.canRead())
             throw new FileNotFoundException("Input FASTA file " + this.inFile + " is not found or unreadable.");
         // Create the binning engine.
-        this.binEngine = this.methodType.create(this.parms, this.outDir);
+        this.binEngine = this.methodType.create(this);
         log.info("Binning method is {}.", this.methodType);
         // Insure we have a good output directory.
         if (! this.outDir.isDirectory()) {

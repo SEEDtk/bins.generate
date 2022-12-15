@@ -55,6 +55,10 @@ public class BinGroup implements Iterable<Bin> {
     private static final JsonObject noCounts = new JsonObject();
     /** default value for empty bin list */
     private static final JsonArray noBins = new JsonArray();
+    /** name of the unplaced-contig output FASTA file */
+    public static final String UNPLACED_FASTA_NAME = "unbinned.fasta";
+    /** format string for bin output FASTA file name */
+    public static final String BIN_OUTPUT_FASTA = "bin.%4d.fasta";
 
     private static enum GroupKeys implements JsonKey {
         COUNTS(noCounts),
@@ -296,7 +300,7 @@ public class BinGroup implements Iterable<Bin> {
         // Open the two files.
         log.info("Writing all the binnable contigs from {} to {}.", inFile, outDir);
         // Compute the output file for the unplaced contigs.
-        File outFile = new File(outDir, "unbinned.fasta");
+        File outFile = new File(outDir, UNPLACED_FASTA_NAME);
         try (FastaInputStream inStream = new FastaInputStream(inFile);
                 FastaOutputStream outStream = new FastaOutputStream(outFile)) {
             // Read the input and copy to the output if warranted.
@@ -310,7 +314,7 @@ public class BinGroup implements Iterable<Bin> {
                     if (! contigBin.isOpen()) {
                         // We need to create an output file for the bin here.
                         openCount++;
-                        File binFile = new File(outDir, String.format("bin%d.fasta", openCount));
+                        File binFile = new File(outDir, String.format(BIN_OUTPUT_FASTA, openCount));
                         contigBin.setOutFile(binFile);
                     }
                     // Write the contig to the output stream.
