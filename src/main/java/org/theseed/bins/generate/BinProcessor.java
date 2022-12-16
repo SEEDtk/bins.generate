@@ -51,7 +51,7 @@ import org.theseed.utils.ParseFailureException;
  * -v	display more frequent log messages
  *
  * --clear			erase the output directory before beginning
- * --recipe			method to be used for binning (default STANDARD)
+ * --recipe			method to be used for binning (default STRICT)
  *
  * The following command-line options relate to the determination of the initial bins.
  *
@@ -62,6 +62,7 @@ import org.theseed.utils.ParseFailureException;
  * --refMaxE		maximum e-value for BLAST hits when finding a reference genome using a SOUR protein (default 1e-10)
  * --minLen			minimum fraction of a protein that must match in a protein BLAST hit (default 0.5)
  * --maxGap			maximum permissible gap between BLAST hits for merging (default 600)
+ * --minHits		minimum number of SOUR hits required for a starter bin (default 2)
  *
  * The following command-line options affect the entire binning process.
  *
@@ -73,6 +74,7 @@ import org.theseed.utils.ParseFailureException;
  * --kDna			DNA kmer size (default 15)
  * --dangLen		repeat region kmer size (default 50)
  * --binStrength	minimum kmer-hit differential to put a contig into a bin (default 10)
+ * --maxRefs		the maximum number of reference genomes to use when characterizing a bin (default 10)
  *
  * The following command-line options relate to the PATRIC database.
  *
@@ -170,6 +172,14 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
     @Option(name = "--binStrength", metaVar = "5", usage = "minimum kmer-hit differential to put a contig into a bin")
     private int binStrength;
 
+    /** the maximum number of reference genomes to use when characterizing a bin */
+    @Option(name = "--maxRefs", metaVar = "1", usage = "the maximum number of reference genomes to use when characterizing a bin")
+    private int maxRefs;
+
+    /** minimum number of SOUR hits required for a starter bin */
+    @Option(name = "--minHits", metaVar = "1", usage = "minimum number of SOUR hits required for a starter bin")
+    private int minHits;
+
     /** alternate URL for accessing the PATRIC data service used to download reference genomes */
     @Option(name = "--dataApiUrl", aliases = { "--dataAPIUrl" },
             usage = "alternate URL for accessing the PATRIC data service used to download reference genomes")
@@ -217,7 +227,9 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
         this.nameSuffix = "clonal population";
         this.xLimit = 30;
         this.binStrength = 10;
-        this.methodType = BinningMethod.Type.STANDARD;
+        this.maxRefs = 10;
+        this.minHits = 2;
+        this.methodType = BinningMethod.Type.STRICT;
     }
 
     @Override
@@ -267,6 +279,12 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
         if (this.binStrength < 1)
             throw new ParseFailureException("Bin strength cannot be less than 1.");
         this.parms.setBinStrength(this.binStrength);
+        if (this.maxRefs < 1)
+            throw new ParseFailureException("Maximum-reference-genome constraint must be at least 1.");
+        this.parms.setMaxRefs(this.maxRefs);
+        if (this.minHits < 1)
+            throw new ParseFailureException("Minimum-SOUR-hits constraint must be at least 1.");
+        this.parms.setMinHits(this.minHits);
         log.info("Tuning parameters are {}.", this.parms);
         // Check the name suffix.
         if (! StringUtils.isAsciiPrintable(this.nameSuffix))

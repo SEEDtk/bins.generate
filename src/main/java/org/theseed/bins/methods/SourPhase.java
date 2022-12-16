@@ -88,31 +88,39 @@ public class SourPhase extends BinPhase {
                     hitList.add(refHit);
                     binGroup.count("sour-hit-" + refHit.getRoleId());
                 }
+                // Get the minimum number of SOUR hits required in an acceptable bin.
+                int minHits = this.getParms().getMinHits();
                 // For each species we need to pick the best reference genome and assign it to all the contigs, which are then merged
                 // into a single per-species bin.  We need the name suffix so we can name the bins.
                 String nameSuffix = this.getNameSuffix();
                 // Loop through the species lists found.
                 for (var speciesHitList : speciesMap.values()) {
-                    Collections.sort(speciesHitList, SCORE_SORTER);
-                    // We want to iterate through this list from the best-scoring hit to the worst, so we use a ReversListIterator.
-                    var iter = new ReverseListIterator<ProteinFinder.DnaHit>(speciesHitList);
-                    // Start with the best hit.  This determines the reference genome and becomes the master bin.
-                    var bestHit = iter.next();
-                    String refGenomeId = bestHit.getRefId();
-                    Genome refGenome = this.getGenome(refGenomeId);
-                    Bin masterBin = binGroup.getContigBin(bestHit.getContigId());
-                    masterBin.setTaxInfo(bestHit, nameSuffix, refGenome);
-                    binGroup.count("sour-species-found");
-                    // Loop through the remaining hits, merging the contigs into the master.
-                    while (iter.hasNext()) {
-                        var hit = iter.next();
-                        Bin bin = binGroup.getContigBin(hit.getContigId());
-                        binGroup.merge(masterBin, bin);
-                        masterBin.addRefGenome(hit.getRefId());
-                        binGroup.count("sour-contig-merged");
+                    if (speciesHitList.size() < minHits) {
+                        log.info("Species {} rejected:  too few sour hits.", speciesHitList.get(0).getSpeciesId());
+                        binGroup.count("sour-species-rejected");
+                    } else {
+                        // Sort in order from worst score to the best.
+                        Collections.sort(speciesHitList, SCORE_SORTER);
+                        // We want to iterate through this list from the best-scoring hit to the worst, so we use a ReversListIterator.
+                        var iter = new ReverseListIterator<ProteinFinder.DnaHit>(speciesHitList);
+                        // Start with the best hit.  This determines the reference genome and becomes the master bin.
+                        var bestHit = iter.next();
+                        String refGenomeId = bestHit.getRefId();
+                        Genome refGenome = this.getGenome(refGenomeId);
+                        Bin masterBin = binGroup.getContigBin(bestHit.getContigId());
+                        masterBin.setTaxInfo(bestHit, nameSuffix, refGenome);
+                        binGroup.count("sour-species-found");
+                        // Loop through the remaining hits, merging the contigs into the master.
+                        while (iter.hasNext()) {
+                            var hit = iter.next();
+                            Bin bin = binGroup.getContigBin(hit.getContigId());
+                            binGroup.merge(masterBin, bin);
+                            masterBin.addRefGenome(hit.getRefId());
+                            binGroup.count("sour-contig-merged");
+                        }
+                        log.info("{} contigs in starter bin {} using reference genome {}.", speciesHitList.size(), bestHit.getContigId(),
+                                refGenome);
                     }
-                    log.info("{} contigs in starter bin {} using reference genome {}.", speciesHitList.size(), bestHit.getContigId(),
-                            refGenome);
                 }
             }
         }

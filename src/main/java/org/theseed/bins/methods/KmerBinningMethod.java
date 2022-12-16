@@ -48,8 +48,8 @@ public class KmerBinningMethod extends BinningMethod {
 
     @Override
     protected void runMethod(List<Bin> starterBins) throws IOException {
-        // Get a map of bin names to bins.  We will use the bin names as group IDs in the kmer map.
-        this.binMap = starterBins.stream().collect(Collectors.toMap(x -> x.getName(), x -> x));
+        // Get a map of bin IDs to starter bins.  We will use the bin IDs as group IDs in the kmer map.
+        this.binMap = starterBins.stream().collect(Collectors.toMap(x -> x.getID(), x -> x));
         // Make an initial pass using reference genomes.
         this.processRefGenomes();
         // Check the repeat-region parameter.
