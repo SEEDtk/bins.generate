@@ -68,6 +68,14 @@ public class ReportPhase extends BinPhase {
                         bin.getCoverage(), bin.getLen());
             }
         }
+        // Finally we report the counts.
+        outFile = this.getOutFile("bins.stats.txt");
+        log.info("Writing statistics to {}.", outFile);
+        try (PrintWriter writer = new PrintWriter(outFile)) {
+            writer.println("stat_name\tcount");
+            for (var count : binGroup.getCounts())
+                writer.format("%s\t%8d%n", count.getKey(), count.getCount());
+        }
         // Now write out the contigs to the FASTA files.
         binGroup.write(this.getInFile(), this.getOutDir());
     }
