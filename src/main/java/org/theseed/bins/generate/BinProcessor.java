@@ -51,10 +51,11 @@ import org.theseed.utils.ParseFailureException;
  * -v	display more frequent log messages
  *
  * --clear			erase the output directory before beginning
+ * --recipe			method to be used for binning (default STANDARD)
  *
  * The following command-line options relate to the determination of the initial bins.
  *
- * --finder			name of the directory containing the protein finder files (default "Finder" in the current directory
+ * --finder			name of the directory containing the protein finder files (default uses FINDER_PATH or "Finder" in the current directory)
  * --lenFilter		minimum length of a contig to be considered for the SOUR protein search (default 300)
  * --covgFilter		minimum coverage for a contig to be considered for the SOUR protein search (default 5.0)
  * --maxE			maximum e-value for BLAST hits when finding a SOUR protein (default 1e-20)
@@ -71,7 +72,6 @@ import org.theseed.utils.ParseFailureException;
  * --kProt			protein kmer size (default 8)
  * --kDna			DNA kmer size (default 15)
  * --dangLen		repeat region kmer size (default 50)
- * --recipe			method to be used for binning (default STANDARD)
  * --binStrength	minimum kmer-hit differential to put a contig into a bin (default 10)
  *
  * The following command-line options relate to the PATRIC database.
@@ -196,6 +196,11 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
     @Override
     protected void setDefaults() {
         this.clearFlag = false;
+        String finderPath = System.getenv("FINDER_PATH");
+        if (! StringUtils.isBlank(finderPath))
+            this.finderDir = new File(finderPath);
+        else
+            this.finderDir = new File(System.getProperty("user.dir"), "Finder");
         this.finderDir = new File(System.getProperty("user.dir"), "Finder");
         this.binCovgFilter = 5.0;
         this.binLenFilter = 300;
@@ -346,6 +351,7 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
     @Override
     public Genome getGenome(String genomeId) throws IOException {
         // Different binning methods require different parts of the genome, so we just get everything.
+        log.info("Loading genome {}.", genomeId);
         return P3Genome.load(p3, genomeId, Details.FULL, genomeCacheDir);
     }
 

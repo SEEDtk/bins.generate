@@ -57,7 +57,7 @@ public class BinGroup implements Iterable<Bin> {
     /** name of the unplaced-contig output FASTA file */
     public static final String UNPLACED_FASTA_NAME = "unbinned.fasta";
     /** format string for bin output FASTA file name */
-    public static final String BIN_OUTPUT_FASTA = "bin.%04d.fasta";
+    public static final String BIN_OUTPUT_FASTA = "bin.%d.%d.fasta";
 
     private static enum GroupKeys implements JsonKey {
         COUNTS(noCounts),
@@ -226,10 +226,10 @@ public class BinGroup implements Iterable<Bin> {
      * A bin becomes significant when it has been assigned a name and a taxon ID.  This method
      * gets the list of significant bins.
      *
-     * @return the set of significant bins in this group
+     * @return the set of significant bins in this group, in order by species ID
      */
     public List<Bin> getSignificantBins() {
-        List<Bin> retVal = this.binList.stream().filter(x -> x.isSignificant()).collect(Collectors.toList());
+        List<Bin> retVal = this.binList.stream().filter(x -> x.isSignificant()).sorted().collect(Collectors.toList());
         return retVal;
     }
 
@@ -323,7 +323,7 @@ public class BinGroup implements Iterable<Bin> {
                     if (! contigBin.isOpen()) {
                         // We need to create an output file for the bin here.
                         openCount++;
-                        File binFile = new File(outDir, String.format(BIN_OUTPUT_FASTA, openCount));
+                        File binFile = new File(outDir, String.format(BIN_OUTPUT_FASTA, openCount, contigBin.getTaxonID()));
                         contigBin.setOutFile(binFile);
                     }
                     // Write the contig to the output stream.
