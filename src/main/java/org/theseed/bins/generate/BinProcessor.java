@@ -216,7 +216,7 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
         this.binLenFilter = 300;
         this.covgFilter = 5.0;
         this.lenFilter = 500;
-        this.dangLen = 50;
+        this.dangLen = 0;
         this.dataApiUrl = P3Connection.getApiUrl();
         this.kDna = 15;
         this.kProt = 8;

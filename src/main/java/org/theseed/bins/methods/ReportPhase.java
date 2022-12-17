@@ -61,7 +61,12 @@ public class ReportPhase extends BinPhase {
         log.info("Writing summary report to {}.", outFile);
         try (PrintWriter writer = new PrintWriter(outFile)) {
             writer.println("bin_name\tspecies\tref_genome_id\tcoverage\tdna_size");
+            // Get all the significant bins in quality order.
             var bins = binGroup.getSignificantBins();
+            // Add the virtual bin at the end.
+            if (virtualBin != null)
+                bins.add(virtualBin);
+            // Write the summary report for each bin.
             for (Bin bin : bins) {
                 String refGenomes = StringUtils.join(bin.getAllRefGenomes(), ", ");
                 writer.format("%s\t%d\t%s\t%6.2f\t%d%n", bin.getName(), bin.getTaxonID(), refGenomes,
