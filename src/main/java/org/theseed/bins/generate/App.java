@@ -10,6 +10,7 @@ import org.theseed.utils.BaseProcessor;
  * build		build the protein finder FASTA files
  * copy			create a new protein finder that is a subset of a bigger one
  * bin			process a FASTA file to create bins
+ * clean		remove ambiguous sequences from a finder's FASTA files
  *
  */
 public class App {
@@ -22,13 +23,16 @@ public class App {
         // Determine the command to process.
         switch (command) {
         case "build" :
-            processor = new BuildProcessor();
+            processor = new BuildFinderProcessor();
             break;
         case "copy" :
-            processor = new CopyProcessor();
+            processor = new CopyFinderProcessor();
             break;
         case "bin" :
             processor = new BinProcessor();
+            break;
+        case "clean" :
+            processor = new CleanFinderProcessor();
             break;
         default:
             throw new RuntimeException("Invalid command " + command);

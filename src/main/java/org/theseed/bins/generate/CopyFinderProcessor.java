@@ -47,11 +47,11 @@ import org.theseed.utils.ParseFailureException;
  * @author Bruce Parrello
  *
  */
-public class CopyProcessor extends BaseInputProcessor {
+public class CopyFinderProcessor extends BaseInputProcessor {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(CopyProcessor.class);
+    protected static Logger log = LoggerFactory.getLogger(CopyFinderProcessor.class);
     /** desired role subset */
     private Set<String> newRoles;
     /** input (source) protein finder */

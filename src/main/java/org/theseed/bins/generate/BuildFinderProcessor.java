@@ -39,11 +39,11 @@ import org.theseed.utils.ParseFailureException;
  * @author Bruce Parrello
  *
  */
-public class BuildProcessor extends BaseProcessor {
+public class BuildFinderProcessor extends BaseProcessor {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(BuildProcessor.class);
+    protected static Logger log = LoggerFactory.getLogger(BuildFinderProcessor.class);
     /** protein finder being created */
     private ProteinFinder finder;
     /** genome source */
