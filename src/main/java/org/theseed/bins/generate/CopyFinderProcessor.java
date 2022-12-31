@@ -115,7 +115,7 @@ public class CopyFinderProcessor extends BaseInputProcessor {
             this.newRoles.add(roleId);
         }
         log.info("{} of {} roles will be transferred to {}.", this.newRoles.size(), this.fastaMap.size(),
-                this.inDir);
+                this.outDir);
     }
 
     @Override
