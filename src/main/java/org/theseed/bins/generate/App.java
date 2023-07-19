@@ -11,6 +11,7 @@ import org.theseed.utils.BaseProcessor;
  * copy			create a new protein finder that is a subset of a bigger one
  * bin			process a FASTA file to create bins
  * clean		remove ambiguous sequences from a finder's FASTA files
+ * sourFile		create a subset of a role definition file with a specified set of roles
  *
  */
 public class App {
@@ -33,6 +34,9 @@ public class App {
             break;
         case "clean" :
             processor = new CleanFinderProcessor();
+            break;
+        case "sourFile" :
+            processor = new SourFileProcessor();
             break;
         default:
             throw new RuntimeException("Invalid command " + command);
