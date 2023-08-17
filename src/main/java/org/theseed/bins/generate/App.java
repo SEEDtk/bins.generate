@@ -12,6 +12,7 @@ import org.theseed.utils.BaseProcessor;
  * bin			process a FASTA file to create bins
  * clean		remove ambiguous sequences from a finder's FASTA files
  * sourFile		create a subset of a role definition file with a specified set of roles
+ * checkv_db	update the checkv database to include taxon IDs
  *
  */
 public class App {
@@ -37,6 +38,9 @@ public class App {
             break;
         case "sourFile" :
             processor = new SourFileProcessor();
+            break;
+        case "checkv_db" :
+            processor = new CheckVDbProcessor();
             break;
         default:
             throw new RuntimeException("Invalid command " + command);
