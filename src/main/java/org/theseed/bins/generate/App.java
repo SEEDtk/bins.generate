@@ -2,6 +2,7 @@ package org.theseed.bins.generate;
 
 import java.util.Arrays;
 
+import org.theseed.text.TemplateTextProcessor;
 import org.theseed.utils.BaseProcessor;
 
 /**
@@ -13,6 +14,7 @@ import org.theseed.utils.BaseProcessor;
  * clean		remove ambiguous sequences from a finder's FASTA files
  * sourFile		create a subset of a role definition file with a specified set of roles
  * checkv_db	update the checkv database to include taxon IDs
+ * text			convert a tab-delimited file to text using a template
  *
  */
 public class App {
@@ -41,6 +43,9 @@ public class App {
             break;
         case "checkv_db" :
             processor = new CheckVDbProcessor();
+            break;
+        case "text" :
+            processor = new TemplateTextProcessor();
             break;
         default:
             throw new RuntimeException("Invalid command " + command);
