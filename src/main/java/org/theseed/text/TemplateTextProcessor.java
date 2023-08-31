@@ -156,7 +156,7 @@ public class TemplateTextProcessor extends BaseReportProcessor {
         else {
             // We will buffer each template's data lines in here.
             List<String> templateLines = new ArrayList<String>(templateGroup.size());
-            Iterator<String> groupIter = templateLines.iterator();
+            Iterator<String> groupIter = templateGroup.iterator();
             // Process the main template.
             String linkHeader = null;
             while (groupIter.hasNext() && linkHeader == null) {
