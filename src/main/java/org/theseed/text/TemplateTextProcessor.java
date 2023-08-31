@@ -205,25 +205,28 @@ public class TemplateTextProcessor extends BaseReportProcessor {
                 for (var line : mainStream) {
                     count++;
                     String translation = this.template.apply(line);
-                    translations.add(translation);
-                    // Get the linked templates.
-                    for (var linkedTemplate : this.linkedTemplates) {
-                        List<String> found = linkedTemplate.getStrings(line);
-                        linked += found.size();
-                        translations.addAll(found);
+                    // Only produce output if the result is nonblank.
+                    if (! StringUtils.isBlank(translation)) {
+                        translations.add(translation);
+                        // Get the linked templates.
+                        for (var linkedTemplate : this.linkedTemplates) {
+                            List<String> found = linkedTemplate.getStrings(line);
+                            linked += found.size();
+                            translations.addAll(found);
+                        }
+                        // Join them all together.
+                        translation = StringUtils.join(translations, ' ');
+                        // Now print the result.
+                        length += translation.length();
+                        writer.println(translation);
+                        if (log.isInfoEnabled()) {
+                            long now = System.currentTimeMillis();
+                            if (now - lastMessage >= 5000)
+                                log.info("{} lines read, {} characters written.", count, length);
+                            lastMessage = now;
+                        }
+                        translations.clear();
                     }
-                    // Join them all together.
-                    translation = StringUtils.join(translations, ' ');
-                    // Now print the result.
-                    length += translation.length();
-                    writer.println(translation);
-                    if (log.isInfoEnabled()) {
-                        long now = System.currentTimeMillis();
-                        if (now - lastMessage >= 5000)
-                            log.info("{} lines read, {} characters written.", count, length);
-                        lastMessage = now;
-                    }
-                    translations.clear();
                 }
                 if (this.linkedTemplates.size() > 0)
                     log.info("{} linked lines were incorporated from {} templates.", linked, this.linkedTemplates.size());
