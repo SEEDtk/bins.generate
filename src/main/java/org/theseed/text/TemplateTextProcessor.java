@@ -68,6 +68,7 @@ import org.theseed.utils.ParseFailureException;
  * -v	display more frequent log messages
  * -R	recursively process the input directories
  *
+ * --single		if specified, all the output will be put into a single file, rather than into files in the output directory
  * --missing	only output files that don't already exist
  * --clear		erase the output directory before processing
  *
@@ -89,6 +90,8 @@ public class TemplateTextProcessor extends BaseProcessor {
     private List<File> inDirList;
     /** current base input directory */
     private File currentDir;
+    /** current output writer */
+    private PrintWriter writer;
 
     // COMMAND-LINE OPTIONS
 
@@ -103,6 +106,10 @@ public class TemplateTextProcessor extends BaseProcessor {
     /** if specified, the output directory will be cleared before processing */
     @Option(name = "--clear", usage = "if specified, the output directory will be cleared before processing")
     private boolean clearFlag;
+
+    /** single-file output mode */
+    @Option(name = "--single", usage = "if specified, all output will be to a single file, rather than files in a directory")
+    private boolean singleFlag;
 
     /** name of the template text file */
     @Argument(index = 0, metaVar = "templateFile.txt", usage = "name of the file containing the text of the template", required = true)
@@ -121,6 +128,8 @@ public class TemplateTextProcessor extends BaseProcessor {
         this.recurseFlag = false;
         this.missingFlag = false;
         this.clearFlag = false;
+        this.singleFlag = false;
+        this.writer = null;
     }
 
     @Override
@@ -140,7 +149,16 @@ public class TemplateTextProcessor extends BaseProcessor {
             log.info("{} subdirectores of {} will be processed.", subDirs.length, this.inputDir);
         }
         // Validate the output directory.
-        if (! this.outDir.isDirectory()) {
+        if (this.singleFlag) {
+            // If we have an output directory, create the file "all.text".  Otherwise, use the file name specified.
+            File outFile;
+            if (this.outDir.isDirectory())
+                outFile = new File(this.outDir, "all.text");
+            else
+                outFile = this.outDir;
+            log.info("All output will be combined into {}.", outFile);
+            this.writer = new PrintWriter(outFile);
+        } else if (! this.outDir.isDirectory()) {
             log.info("Creating output directory {}.", this.outDir);
             FileUtils.forceMkdir(this.outDir);
         } else if (this.clearFlag) {
@@ -162,18 +180,25 @@ public class TemplateTextProcessor extends BaseProcessor {
             this.currentDir = baseDir;
             // Compute the output file for this directory.
             String name = baseDir.getName();
-            File outFile = new File(this.outDir, name + ".text");
-            if (this.missingFlag && outFile.exists())
-                log.info("Skipping input directory {}-- output file {} exists.", baseDir, outFile);
-            else {
-                log.info("Processing data from {} into text file {}.", baseDir, outFile);
+            boolean skipFile = false;
+            if (! this.singleFlag) {
+                File outFile = new File(this.outDir, name + ".text");
+                if (this.missingFlag && outFile.exists()) {
+                    log.info("Skipping input directory {}-- output file {} exists.", baseDir, outFile);
+                    skipFile = true;
+                } else {
+                    this.writer = new PrintWriter(outFile);
+                    log.info("Processing data from {} into text file {}.", baseDir, outFile);
+                }
+            } else
+                log.info("Processing data from {}.", baseDir);
+            if (! skipFile) {
                 // Clear the link lists.
                 this.linkedTemplates.clear();
                 this.linkedFiles.clear();
                 // We start by reading a main template, then all its linked templates.  When we hit end-of-file or a
                 // #main marker, we run the main template and output the results.
-                try (LineReader templateStream = new LineReader(this.templateFile);
-                        PrintWriter writer = new PrintWriter(outFile)) {
+                try (LineReader templateStream = new LineReader(this.templateFile)) {
                     // We will buffer each template group in here.  A group starts with a #main header and runs through
                     // the next #main or end-of-file.
                     List<String> templateGroup = new ArrayList<String>(100);
@@ -189,7 +214,7 @@ public class TemplateTextProcessor extends BaseProcessor {
                     for (var templateLine : templateStream) {
                         if (StringUtils.startsWith(templateLine, "#main")) {
                             // New group starting.  Process the old group.
-                            this.processGroup(savedHeader, templateGroup, writer);
+                            this.processGroup(savedHeader, templateGroup, this.writer);
                             // Set up for the next group.
                             templateGroup.clear();
                             savedHeader = templateLine;
@@ -197,7 +222,13 @@ public class TemplateTextProcessor extends BaseProcessor {
                             templateGroup.add(templateLine);
                     }
                     // Process the residual group.
-                    this.processGroup(savedHeader, templateGroup, writer);
+                    this.processGroup(savedHeader, templateGroup, this.writer);
+                } finally {
+                    this.writer.flush();
+                    if (! this.singleFlag) {
+                        this.writer.close();
+                        this.writer = null;
+                    }
                 }
             }
         }
