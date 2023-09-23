@@ -8,17 +8,20 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.args4j.Argument;
+import org.kohsuke.args4j.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.theseed.io.FieldInputStream;
 import org.theseed.io.LineReader;
 import org.theseed.io.template.LineTemplate;
-import org.theseed.utils.BaseReportProcessor;
+import org.theseed.utils.BaseProcessor;
 import org.theseed.utils.ParseFailureException;
 
 /**
@@ -34,22 +37,27 @@ import org.theseed.utils.ParseFailureException;
  * first non-white character in a line is part of a literal, then a space is added in front when it is concatenated.
  *
  * The template file generally contain multiple templates for different files.  Each template corresponds to a file
- * name in the positional parameters, in order.  A main template has a header that simply says "#main".  These
- * templates generate output.  There are also linked templates. These begin with a header line that says "#linked",
- * and represent data lines that are joined with a main file using a column in that file and a column in the linked
- * file.  The column specifiers are specified as positional parameters on the header line, space-delimited. So,
+ * name in the positional parameters, in order.  A main template has a header that says "#main" followed by a file
+ * name (the main file).  These templates generate output.  There are also linked templates. These begin with a header
+ * line that says "#linked" and represent data lines that are joined with a main file using a column in that file
+ * and a column in the linked file.  The column specifiers are specified as positional parameters on the header line,
+ * space-delimited. So,
  *
- * 		#linked patric_id feature_id
+ * 		#linked patric_id feature_id fileName
  *
- * would join based on the "patric_id" field in the main file using the "feature_id" field in the secondary file.  For
- * each matching line in the secondary file, the applied template text will be added to the current-line output of
- * the main file.  The linked files must follow the main file to which they apply.
+ * would join based on the "patric_id" field in the main file using the "feature_id" field in the secondary file with
+ * name "fileName" in the input directory.  If there are only two fields instead of three, then the two column names are
+ * assumed to be the same.  For each matching line in the secondary file, the applied template text
+ * will be added to the current-line output from the main file.  The linked files must follow the main file to which
+ * they apply.
  *
  * The first record of the template file absolutely must be "#main".  This is how we know we have the right kind of
  * file.  Subsequent lines that begin with "##" are treated as comments.
  *
- * THe positional parameters are the name of the template file and the name of the input files that correspond one-to-one
- * with the templates.  The output will be to the standard output.
+ * THe positional parameters are the name of the template file, the name of the input directory containing the files named
+ * in the templates, and the name of the output directory.  If the "--recurse" option is specified, all subdirectories
+ * if the named input directory will be processed rather than the directory itself.  Each output file will have a name
+ * consisting of the input directory base name with a suffix of ".text".
  *
  * The input files are all field-input streams and the type is determined by the filename extension.  An extension of
  * ".tbl", ".tab", ".txt", or ".tsv" implies a tab-delimited file and an extension of ".json" a JSON list file.
@@ -58,12 +66,15 @@ import org.theseed.utils.ParseFailureException;
  *
  * -h	display command-line usage
  * -v	display more frequent log messages
- * -o	output text file (if not the standard output)
+ * -R	recursively process the input directories
+ *
+ * --missing	only output files that don't already exist
+ * --clear		erase the output directory before processing
  *
  * @author Bruce Parrello
  *
  */
-public class TemplateTextProcessor extends BaseReportProcessor {
+public class TemplateTextProcessor extends BaseProcessor {
 
     // FIELDS
     /** logging facility */
@@ -72,69 +83,123 @@ public class TemplateTextProcessor extends BaseReportProcessor {
     private LineTemplate template;
     /** list of linked-template descriptors */
     private List<LinkedTemplateDescriptor> linkedTemplates;
-    /** index number of current template, to match to input file index */
-    private int fileIdx;
+    /** list of linked-template input files */
+    private List<File> linkedFiles;
+    /** list of input directories to process */
+    private List<File> inDirList;
+    /** current base input directory */
+    private File currentDir;
 
     // COMMAND-LINE OPTIONS
+
+    /** if specified, the input directory will be processed recursively */
+    @Option(name = "--recurse", aliases = { "--recursive", "-R" }, usage = "if specified, each input subdirectory will be processed rather than the input directory itself")
+    private boolean recurseFlag;
+
+    /** if specified, an an output file exists, the input directory will be skipped */
+    @Option(name = "--missing", usage = "if specified, directories which already have output files will be skipped")
+    private boolean missingFlag;
+
+    /** if specified, the output directory will be cleared before processing */
+    @Option(name = "--clear", usage = "if specified, the output directory will be cleared before processing")
+    private boolean clearFlag;
 
     /** name of the template text file */
     @Argument(index = 0, metaVar = "templateFile.txt", usage = "name of the file containing the text of the template", required = true)
     private File templateFile;
 
-    /** name of the primary input file */
-    @Argument(index = 1, metaVar = "inputFile1.tbl inputFile2.tbl", usage = "names of the data input files", required = true)
-    private List<File> inputFiles;
+    /** name of the input directory */
+    @Argument(index = 1, metaVar = "inputDir", usage = "input directory", required = true)
+    private File inputDir;
+
+    /** name of the input directory */
+    @Argument(index = 2, metaVar = "outDir", usage = "output directory", required = true)
+    private File outDir;
 
     @Override
-    protected void setReporterDefaults() {
-        this.inputFiles = new ArrayList<File>();
+    protected void setDefaults() {
+        this.recurseFlag = false;
+        this.missingFlag = false;
+        this.clearFlag = false;
     }
 
     @Override
-    protected void validateReporterParms() throws IOException, ParseFailureException {
+    protected boolean validateParms() throws IOException, ParseFailureException {
         // Verify that the template file exists.
         if (! this.templateFile.canRead())
             throw new FileNotFoundException("Template file " + this.templateFile + " is not found or unreadable.");
-        // Insure that all the input files exist.
-        for (File inputFile : inputFiles) {
-            if (! inputFile.canRead())
-                throw new FileNotFoundException("Input file " + inputFile + " is not found or unreadable.");
+        // Set up the input directories.
+        if (! this.inputDir.isDirectory())
+            throw new FileNotFoundException("Input directory " + this.inputDir + " is not found or invalid.");
+        if (! this.recurseFlag) {
+            log.info("Processing single input directory {}.", this.inputDir);
+            this.inDirList = List.of(this.inputDir);
+        } else {
+            File[] subDirs = this.inputDir.listFiles(File::isDirectory);
+            this.inDirList = Arrays.asList(subDirs);
+            log.info("{} subdirectores of {} will be processed.", subDirs.length, this.inputDir);
         }
+        // Validate the output directory.
+        if (! this.outDir.isDirectory()) {
+            log.info("Creating output directory {}.", this.outDir);
+            FileUtils.forceMkdir(this.outDir);
+        } else if (this.clearFlag) {
+            log.info("Erasing output directory {}.", this.outDir);
+            FileUtils.cleanDirectory(this.outDir);
+        } else
+            log.info("Output will be to directory {}.", this.outDir);
         // Initialize the linking structures.
-        this.linkedTemplates = new ArrayList<LinkedTemplateDescriptor>(this.inputFiles.size());
-        this.fileIdx = 0;
+        this.linkedTemplates = new ArrayList<LinkedTemplateDescriptor>();
+        this.linkedFiles = new ArrayList<File>();
         this.template = null;
+        return true;
     }
 
     @Override
-    protected void runReporter(PrintWriter writer) throws Exception {
-        // We start by reading a main template, then all its linked templates.  When we hit end-of-file or a
-        // #main marker, we run the main template and output the results.
-        try (LineReader templateStream = new LineReader(this.templateFile)) {
-            // We will buffer each template group in here.  A group starts with a #main header and runs through
-            // the next #main or end-of-file.
-            List<String> templateGroup = new ArrayList<String>(100);
-            // Special handling is required for the first header.
-            Iterator<String> streamIter = templateStream.iterator();
-            if (! streamIter.hasNext())
-                throw new IOException("No data found in template file.");
-            String savedHeader = streamIter.next();
-            if (! StringUtils.startsWith(savedHeader, "#main"))
-                throw new IOException("Template file does not start with #main header.");
-            // Now we have the main header saved, and we can process each template group.
-            // Loop through the template lines.
-            for (var templateLine : templateStream) {
-                if (StringUtils.startsWith(templateLine, "#main")) {
-                    // New group starting.  Process the old group.
+    protected void runCommand() throws Exception {
+        // Loop through the input directories.
+        for (File baseDir : this.inDirList) {
+            this.currentDir = baseDir;
+            // Compute the output file for this directory.
+            String name = baseDir.getName();
+            File outFile = new File(this.outDir, name + ".text");
+            if (this.missingFlag && outFile.exists())
+                log.info("Skipping input directory {}-- output file {} exists.", baseDir, outFile);
+            else {
+                log.info("Processing data from {} into text file {}.", baseDir, outFile);
+                // Clear the link lists.
+                this.linkedTemplates.clear();
+                this.linkedFiles.clear();
+                // We start by reading a main template, then all its linked templates.  When we hit end-of-file or a
+                // #main marker, we run the main template and output the results.
+                try (LineReader templateStream = new LineReader(this.templateFile);
+                        PrintWriter writer = new PrintWriter(outFile)) {
+                    // We will buffer each template group in here.  A group starts with a #main header and runs through
+                    // the next #main or end-of-file.
+                    List<String> templateGroup = new ArrayList<String>(100);
+                    // Special handling is required for the first header.
+                    Iterator<String> streamIter = templateStream.iterator();
+                    if (! streamIter.hasNext())
+                        throw new IOException("No data found in template file.");
+                    String savedHeader = streamIter.next();
+                    if (! StringUtils.startsWith(savedHeader, "#main"))
+                        throw new IOException("Template file does not start with #main header.");
+                    // Now we have the main header saved, and we can process each template group.
+                    // Loop through the template lines.
+                    for (var templateLine : templateStream) {
+                        if (StringUtils.startsWith(templateLine, "#main")) {
+                            // New group starting.  Process the old group.
+                            this.processGroup(savedHeader, templateGroup, writer);
+                            // Set up for the next group.
+                            templateGroup.clear();
+                            savedHeader = templateLine;
+                        } else if (! templateLine.startsWith("##"))
+                            templateGroup.add(templateLine);
+                    }
+                    // Process the residual group.
                     this.processGroup(savedHeader, templateGroup, writer);
-                    // Set up for the next group.
-                    templateGroup.clear();
-                    savedHeader = templateLine;
-                } else if (! templateLine.startsWith("##"))
-                    templateGroup.add(templateLine);
+                }
             }
-            // Process the residual group.
-            this.processGroup(savedHeader, templateGroup, writer);
         }
     }
 
@@ -169,7 +234,10 @@ public class TemplateTextProcessor extends BaseReportProcessor {
             if (templateLines.isEmpty())
                 throw new IOException("Template group has no main template.");
             // Get the input file for the main template.
-            File mainFile = this.getSourceFile();
+            String[] pieces = StringUtils.split(savedHeader);
+            if (pieces.length < 2)
+                throw new IOException("Main template has no input file name.");
+            File mainFile = new File(this.currentDir, pieces[1]);
             try (FieldInputStream mainStream = FieldInputStream.create(mainFile)) {
                 this.buildMainTemplate(mainStream, savedHeader, templateLines);
                 // If there are any linked templates, we build them here.
@@ -278,38 +346,26 @@ public class TemplateTextProcessor extends BaseReportProcessor {
         String[] tokens = StringUtils.split(savedHeader);
         String mainKey;
         String linkKey;
+        File linkFile;
         switch (tokens.length) {
-        case 1 :
-            throw new ParseFailureException("Template header \"" + savedHeader + "\" has two few parameters.");
         case 2 :
+            throw new ParseFailureException("Template header \"" + savedHeader + "\" has two few parameters.");
+        case 3 :
             // Single key name, so it is the same for both files.
             mainKey = tokens[1];
             linkKey = tokens[1];
+            linkFile = new File(this.currentDir, tokens[2]);
             break;
         default :
             // Two key names, so we use both.
             mainKey = tokens[1];
             linkKey = tokens[2];
+            linkFile = new File(this.currentDir, tokens[3]);
             break;
         }
-        File linkFile = this.getSourceFile();
         // Create the template and add it to the queue.
         var template = new LinkedTemplateDescriptor(mainKey, linkKey, templateLines, linkFile);
         this.linkedTemplates.add(template);
-    }
-
-    /**
-     * @return the next available source file, to use for the current template
-     *
-     * @throws ParseFailureException
-     */
-    private File getSourceFile() throws ParseFailureException {
-        // Get the template input source file.
-        if (this.fileIdx >= this.inputFiles.size())
-            throw new ParseFailureException("Too input files in parameter list for number of templates specified.");
-        File retVal = this.inputFiles.get(this.fileIdx);
-        this.fileIdx++;
-        return retVal;
     }
 
 }
