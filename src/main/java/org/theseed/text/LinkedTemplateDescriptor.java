@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.theseed.io.FieldInputStream;
 import org.theseed.io.template.LineTemplate;
+import org.theseed.text.output.TemplateHashWriter;
 import org.theseed.utils.ParseFailureException;
 
 /**
@@ -51,12 +52,13 @@ public class LinkedTemplateDescriptor {
      * @param linkKey			index (1-based) or name of linked-file column containing the join key
      * @param templateLines		list of template file lines
      * @param linkedFile		name of linked file
+     * @param globals 			global-data structure
      *
      * @throws IOException
      * @throws ParseFailureException
      */
-    public LinkedTemplateDescriptor(String mainKey, String linkKey, List<String> templateLines, File linkedFile)
-            throws IOException, ParseFailureException {
+    public LinkedTemplateDescriptor(String mainKey, String linkKey, List<String> templateLines, File linkedFile,
+            TemplateHashWriter globals) throws IOException, ParseFailureException {
         log.info("Building template based on join from {} to {}.", mainKey, linkKey);
         this.mainFileKey = mainKey;
         String templateString = buildTemplate(templateLines);
@@ -72,7 +74,7 @@ public class LinkedTemplateDescriptor {
             // Find the key column.
             int keyIdx = linkStream.findField(linkKey);
             // Construct the template.
-            LineTemplate template = new LineTemplate(linkStream, templateString);
+            LineTemplate template = new LineTemplate(linkStream, templateString, globals);
             // Loop through the link file.
             for (var line : linkStream) {
                 String key = line.get(keyIdx);

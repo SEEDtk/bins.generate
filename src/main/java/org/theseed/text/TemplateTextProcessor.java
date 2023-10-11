@@ -325,13 +325,15 @@ public class TemplateTextProcessor extends BaseProcessor {
                         linkedTemplate.findMainKey(mainStream);
                 }
                 // All the templates are compiled.  Now we run through the main file.
-                // We want to count the number of lines read, the number of linked lines added, and the total text length generated.
+                // We want to count the number of lines read, the number of linked lines added,
+                // and the total text length generated.
                 int count = 0;
                 int linked = 0;
                 long length = 0;
                 long lastMessage = System.currentTimeMillis();
                 // This list is used to buffer the main template and the linked ones.
                 List<String> translations = new ArrayList<String>(this.linkedTemplates.size() + 1);
+                // Read the input file.
                 log.info("Reading input file.");
                 for (var line : mainStream) {
                     count++;
@@ -384,7 +386,7 @@ public class TemplateTextProcessor extends BaseProcessor {
         String templateString = LinkedTemplateDescriptor.buildTemplate(templateLines);
         // Compile the string.
         log.info("Compiling main template from {} lines.", templateLines.size());
-        this.template = new LineTemplate(mainStream, templateString);
+        this.template = new LineTemplate(mainStream, templateString, this.globals);
         // Denote there are no linked templates yet.
         this.linkedTemplates.clear();
     }
@@ -428,7 +430,7 @@ public class TemplateTextProcessor extends BaseProcessor {
             break;
         }
         // Create the template and add it to the queue.
-        var template = new LinkedTemplateDescriptor(mainKey, linkKey, templateLines, linkFile);
+        var template = new LinkedTemplateDescriptor(mainKey, linkKey, templateLines, linkFile, this.globals);
         this.linkedTemplates.add(template);
     }
 
