@@ -23,4 +23,9 @@ public interface ITemplateWriter {
      */
     public void write(String fileName, String key, String outString) throws IOException;
 
+   /**
+     * Insure all output is written and all I/O resources are freed.
+     */
+    public void close();
+
 }

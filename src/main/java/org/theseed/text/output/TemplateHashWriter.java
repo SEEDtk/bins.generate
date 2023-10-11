@@ -50,4 +50,9 @@ public class TemplateHashWriter implements ITemplateWriter {
         return retVal;
     }
 
+    @Override
+    public void close() {
+        // This is an in-memory structure.  No action is needed.
+    }
+
 }

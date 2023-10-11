@@ -6,13 +6,10 @@ package org.theseed.text;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.args4j.Argument;
@@ -22,6 +19,9 @@ import org.slf4j.LoggerFactory;
 import org.theseed.io.FieldInputStream;
 import org.theseed.io.LineReader;
 import org.theseed.io.template.LineTemplate;
+import org.theseed.text.output.ITemplateWriter;
+import org.theseed.text.output.TemplateHashWriter;
+import org.theseed.text.output.TemplatePrintWriter;
 import org.theseed.utils.BaseProcessor;
 import org.theseed.utils.ParseFailureException;
 
@@ -74,11 +74,10 @@ import org.theseed.utils.ParseFailureException;
  * -h	display command-line usage
  * -v	display more frequent log messages
  * -R	recursively process the input directories
+ * -G	name of the global template directory (optional)
  *
- * --single		if specified, all the output will be put into a single file, rather than into files in the output directory
  * --missing	only files that don't already exist will be output
  * --clear		erase the output directory before processing
- * --global		name of the global template directory.
  *
  * @author Bruce Parrello
  *
@@ -98,10 +97,10 @@ public class TemplateTextProcessor extends BaseProcessor {
     private List<File> inDirList;
     /** current base input directory */
     private File currentDir;
-    /** current output writer */
-    private PrintWriter writer;
-    /** map of global strings:  fileName -> key -> string */
-    private Map<String, Map<String, String>> globalStringMap;
+    /** global template file */
+    private File globalTemplateFile;
+    /** global template output */
+    private TemplateHashWriter globals;
 
     // COMMAND-LINE OPTIONS
 
@@ -117,9 +116,10 @@ public class TemplateTextProcessor extends BaseProcessor {
     @Option(name = "--clear", usage = "if specified, the output directory will be cleared before processing")
     private boolean clearFlag;
 
-    /** single-file output mode */
-    @Option(name = "--single", usage = "if specified, all output will be to a single file, rather than files in a directory")
-    private boolean singleFlag;
+    /** global template directory */
+    @Option(name = "--global", aliases = { "-G" }, metaVar = "globalDir",
+            usage = "if specified, a global input/template directory for $include directives")
+    private File globalDir;
 
     /** name of the template text file */
     @Argument(index = 0, metaVar = "templateFile.txt", usage = "name of the file containing the text of the template", required = true)
@@ -138,8 +138,7 @@ public class TemplateTextProcessor extends BaseProcessor {
         this.recurseFlag = false;
         this.missingFlag = false;
         this.clearFlag = false;
-        this.singleFlag = false;
-        this.writer = null;
+        this.globalDir = null;
     }
 
     @Override
@@ -158,17 +157,20 @@ public class TemplateTextProcessor extends BaseProcessor {
             this.inDirList = Arrays.asList(subDirs);
             log.info("{} subdirectores of {} will be processed.", subDirs.length, this.inputDir);
         }
+        // Validate the global directory.
+        if (this.globalDir != null) {
+            if (! this.globalDir.isDirectory())
+                throw new FileNotFoundException("Global template directory " + this.globalDir
+                        + " is not found or invalid.");
+            else {
+                this.globalTemplateFile = new File(this.globalDir, "global.tmpl");
+                if (! this.globalTemplateFile.canRead())
+                    throw new FileNotFoundException("Global template file " + this.globalTemplateFile
+                            + " is not found or unreadable.");
+            }
+        }
         // Validate the output directory.
-        if (this.singleFlag) {
-            // If we have an output directory, create the file "all.text".  Otherwise, use the file name specified.
-            File outFile;
-            if (this.outDir.isDirectory())
-                outFile = new File(this.outDir, "all.text");
-            else
-                outFile = this.outDir;
-            log.info("All output will be combined into {}.", outFile);
-            this.writer = new PrintWriter(outFile);
-        } else if (! this.outDir.isDirectory()) {
+        if (! this.outDir.isDirectory()) {
             log.info("Creating output directory {}.", this.outDir);
             FileUtils.forceMkdir(this.outDir);
         } else if (this.clearFlag) {
@@ -185,62 +187,76 @@ public class TemplateTextProcessor extends BaseProcessor {
 
     @Override
     protected void runCommand() throws Exception {
+        // Process the global directory.
+        this.globals = new TemplateHashWriter();
+        if (this.globalDir != null) {
+            log.info("Computing global data from {}.", this.globalDir);
+            this.currentDir = this.globalDir;
+            this.executeTemplates(this.globalTemplateFile, globals);
+        }
         // Loop through the input directories.
         for (File baseDir : this.inDirList) {
             this.currentDir = baseDir;
             // Compute the output file for this directory.
+            ITemplateWriter writer = null;
             String name = baseDir.getName();
             boolean skipFile = false;
-            if (! this.singleFlag) {
-                File outFile = new File(this.outDir, name + ".text");
-                if (this.missingFlag && outFile.exists()) {
-                    log.info("Skipping input directory {}-- output file {} exists.", baseDir, outFile);
-                    skipFile = true;
-                } else {
-                    this.writer = new PrintWriter(outFile);
-                    log.info("Processing data from {} into text file {}.", baseDir, outFile);
-                }
-            } else
-                log.info("Processing data from {}.", baseDir);
-            if (! skipFile) {
-                // Clear the link lists.
-                this.linkedTemplates.clear();
-                this.linkedFiles.clear();
-                // We start by reading a main template, then all its linked templates.  When we hit end-of-file or a
-                // #main marker, we run the main template and output the results.
-                try (LineReader templateStream = new LineReader(this.templateFile)) {
-                    // We will buffer each template group in here.  A group starts with a #main header and runs through
-                    // the next #main or end-of-file.
-                    List<String> templateGroup = new ArrayList<String>(100);
-                    // Special handling is required for the first header.
-                    Iterator<String> streamIter = templateStream.iterator();
-                    if (! streamIter.hasNext())
-                        throw new IOException("No data found in template file.");
-                    String savedHeader = streamIter.next();
-                    if (! StringUtils.startsWith(savedHeader, "#main"))
-                        throw new IOException("Template file does not start with #main header.");
-                    // Now we have the main header saved, and we can process each template group.
-                    // Loop through the template lines.
-                    for (var templateLine : templateStream) {
-                        if (StringUtils.startsWith(templateLine, "#main")) {
-                            // New group starting.  Process the old group.
-                            this.processGroup(savedHeader, templateGroup, this.writer);
-                            // Set up for the next group.
-                            templateGroup.clear();
-                            savedHeader = templateLine;
-                        } else if (! templateLine.startsWith("##"))
-                            templateGroup.add(templateLine);
-                    }
-                    // Process the residual group.
-                    this.processGroup(savedHeader, templateGroup, this.writer);
-                } finally {
-                    this.writer.flush();
-                    if (! this.singleFlag) {
-                        this.writer.close();
-                        this.writer = null;
-                    }
-                }
+            File outFile = new File(this.outDir, name + ".text");
+            if (this.missingFlag && outFile.exists()) {
+                log.info("Skipping input directory {}-- output file {} exists.", baseDir, outFile);
+                skipFile = true;
+            } else {
+                writer = new TemplatePrintWriter(outFile);
+                log.info("Processing data from {} into text file {}.", baseDir, outFile);
             }
+            if (! skipFile)
+                this.executeTemplates(this.templateFile, writer);
+        }
+    }
+
+    /**
+     * Process the specified template file into the specified output writer.
+     *
+     * @param source	source template file name
+     * @param writer	template output writer
+     *
+     * @throws IOException
+     * @throws ParseFailureException
+     */
+    private void executeTemplates(File source, ITemplateWriter writer)
+            throws IOException, ParseFailureException {
+        // Clear the link lists.
+        this.linkedTemplates.clear();
+        this.linkedFiles.clear();
+        // We start by reading a main template, then all its linked templates.  When we hit end-of-file or a
+        // #main marker, we run the main template and output the results.
+        try (LineReader templateStream = new LineReader(source)) {
+            // We will buffer each template group in here.  A group starts with a #main header and runs through
+            // the next #main or end-of-file.
+            List<String> templateGroup = new ArrayList<String>(100);
+            // Special handling is required for the first header.
+            Iterator<String> streamIter = templateStream.iterator();
+            if (! streamIter.hasNext())
+                throw new IOException("No data found in template file.");
+            String savedHeader = streamIter.next();
+            if (! StringUtils.startsWith(savedHeader, "#main"))
+                throw new IOException("Template file does not start with #main header.");
+            // Now we have the main header saved, and we can process each template group.
+            // Loop through the template lines.
+            for (var templateLine : templateStream) {
+                if (StringUtils.startsWith(templateLine, "#main")) {
+                    // New group starting.  Process the old group.
+                    this.processGroup(savedHeader, templateGroup, writer);
+                    // Set up for the next group.
+                    templateGroup.clear();
+                    savedHeader = templateLine;
+                } else if (! templateLine.startsWith("##"))
+                    templateGroup.add(templateLine);
+            }
+            // Process the residual group.
+            this.processGroup(savedHeader, templateGroup, writer);
+        } finally {
+            writer.close();
         }
     }
 
@@ -255,7 +271,7 @@ public class TemplateTextProcessor extends BaseProcessor {
      * @throws IOException
      * @throws ParseFailureException
      */
-    private void processGroup(String savedHeader, List<String> templateGroup, PrintWriter writer)
+    private void processGroup(String savedHeader, List<String> templateGroup, ITemplateWriter writer)
             throws IOException, ParseFailureException {
         if (templateGroup.isEmpty())
             log.warn("Empty template group skipped.");
@@ -278,8 +294,14 @@ public class TemplateTextProcessor extends BaseProcessor {
             String[] pieces = StringUtils.split(savedHeader);
             if (pieces.length < 2)
                 throw new IOException("Main template has no input file name.");
-            File mainFile = new File(this.currentDir, pieces[1]);
+            else if (pieces.length < 3)
+                throw new IOException("Main template for " + pieces[1] + " has no key field name.");
+            // Get the file name and the key field name.
+            String baseFileName = pieces[1];
+            File mainFile = new File(this.currentDir, baseFileName);
+            String keyName = pieces[2];
             try (FieldInputStream mainStream = FieldInputStream.create(mainFile)) {
+                int keyIdx = mainStream.findField(keyName);
                 this.buildMainTemplate(mainStream, savedHeader, templateLines);
                 // If there are any linked templates, we build them here.
                 if (linkHeader != null) {
@@ -327,7 +349,8 @@ public class TemplateTextProcessor extends BaseProcessor {
                         translation = StringUtils.join(translations, ' ');
                         // Now print the result.
                         length += translation.length();
-                        writer.println(translation);
+                        String keyValue = line.get(keyIdx);
+                        writer.write(baseFileName, keyValue, translation);
                         if (log.isInfoEnabled()) {
                             long now = System.currentTimeMillis();
                             if (now - lastMessage >= 5000)
