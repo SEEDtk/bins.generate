@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -36,11 +37,12 @@ import org.theseed.utils.ParseFailureException;
  * conditionals.  Leading and trailing whitespace on each line of the template file will be trimmed.  If the
  * first non-white character in a line is part of a literal, then a space is added in front when it is concatenated.
  *
- * The template file generally contain multiple templates for different files.  Each template corresponds to a file
- * name in the positional parameters, in order.  A main template has a header that says "#main" followed by a file
- * name (the main file).  These templates generate output.  There are also linked templates. These begin with a header
- * line that says "#linked" and represent data lines that are joined with a main file using a column in that file
- * and a column in the linked file.  The column specifiers are specified as positional parameters on the header line,
+ * The template file generally contains multiple templates for different files.  The source files are in a single
+ * directory, and each template header contains the name of a file in that diriectory. A main template has a header
+ * that says "#main" followed by a file name (the main file), and the name of a key field from the input file.
+ * These templates generate output.  There are also linked templates. These begin with a header line that says
+ * "#linked" and represent data lines that are joined with a main file using a column in that file and a column
+ * in the linked file.  The column specifiers are specified as positional parameters on the header line,
  * space-delimited. So,
  *
  * 		#linked patric_id feature_id fileName
@@ -62,6 +64,11 @@ import org.theseed.utils.ParseFailureException;
  * The input files are all field-input streams and the type is determined by the filename extension.  An extension of
  * ".tbl", ".tab", ".txt", or ".tsv" implies a tab-delimited file and an extension of ".json" a JSON list file.
  *
+ * Linked templates are designed to handle one-to-many relationships; we also support many-to-one relationships
+ * through the $include directive.  To use this directive, you must specify a global template directory.  The
+ * template file for this directory will be named "global.tmpl", and instead of being output, the template strings
+ * will be put into a database for callout by $include.
+ *
  * The following command-line options are supported.
  *
  * -h	display command-line usage
@@ -69,8 +76,9 @@ import org.theseed.utils.ParseFailureException;
  * -R	recursively process the input directories
  *
  * --single		if specified, all the output will be put into a single file, rather than into files in the output directory
- * --missing	only output files that don't already exist
+ * --missing	only files that don't already exist will be output
  * --clear		erase the output directory before processing
+ * --global		name of the global template directory.
  *
  * @author Bruce Parrello
  *
@@ -92,6 +100,8 @@ public class TemplateTextProcessor extends BaseProcessor {
     private File currentDir;
     /** current output writer */
     private PrintWriter writer;
+    /** map of global strings:  fileName -> key -> string */
+    private Map<String, Map<String, String>> globalStringMap;
 
     // COMMAND-LINE OPTIONS
 
