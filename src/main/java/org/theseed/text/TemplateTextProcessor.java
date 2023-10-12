@@ -19,9 +19,9 @@ import org.slf4j.LoggerFactory;
 import org.theseed.io.FieldInputStream;
 import org.theseed.io.LineReader;
 import org.theseed.io.template.LineTemplate;
-import org.theseed.text.output.ITemplateWriter;
-import org.theseed.text.output.TemplateHashWriter;
-import org.theseed.text.output.TemplatePrintWriter;
+import org.theseed.io.template.output.ITemplateWriter;
+import org.theseed.io.template.output.TemplateHashWriter;
+import org.theseed.io.template.output.TemplatePrintWriter;
 import org.theseed.utils.BaseProcessor;
 import org.theseed.utils.ParseFailureException;
 
