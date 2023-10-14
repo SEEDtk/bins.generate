@@ -75,6 +75,7 @@ import org.theseed.utils.ParseFailureException;
  * -v	display more frequent log messages
  * -R	recursively process the input directories
  * -G	name of the global template directory (optional)
+ * -o	name of the output file (mutually exclusive with -R)
  *
  * --missing	only files that don't already exist will be output
  * --clear		erase the output directory before processing
@@ -116,6 +117,11 @@ public class TemplateTextProcessor extends BaseProcessor {
     @Option(name = "--clear", usage = "if specified, the output directory will be cleared before processing")
     private boolean clearFlag;
 
+    /** if specified, the name of the output file; single-file mode only */
+    @Option(name = "--output", aliases = { "-o" }, metaVar = "output.text",
+            usage = "for single output files, the desired output file name")
+    private File outFile;
+
     /** global template directory */
     @Option(name = "--global", aliases = { "-G" }, metaVar = "globalDir",
             usage = "if specified, a global input/template directory for $include directives")
@@ -139,6 +145,7 @@ public class TemplateTextProcessor extends BaseProcessor {
         this.missingFlag = false;
         this.clearFlag = false;
         this.globalDir = null;
+        this.outFile = null;
     }
 
     @Override
@@ -155,7 +162,7 @@ public class TemplateTextProcessor extends BaseProcessor {
         } else {
             File[] subDirs = this.inputDir.listFiles(File::isDirectory);
             this.inDirList = Arrays.asList(subDirs);
-            log.info("{} subdirectores of {} will be processed.", subDirs.length, this.inputDir);
+            log.info("{} subdirectories of {} will be processed.", subDirs.length, this.inputDir);
         }
         // Validate the global directory.
         if (this.globalDir != null) {
@@ -169,6 +176,9 @@ public class TemplateTextProcessor extends BaseProcessor {
                             + " is not found or unreadable.");
             }
         }
+        // Insure the output file is not being misused.
+        if (this.outFile != null && this.recurseFlag)
+            throw new ParseFailureException("Cannot specify an output file name in recursive mode.");
         // Validate the output directory.
         if (! this.outDir.isDirectory()) {
             log.info("Creating output directory {}.", this.outDir);
@@ -195,19 +205,25 @@ public class TemplateTextProcessor extends BaseProcessor {
             this.executeTemplates(this.globalTemplateFile, globals);
         }
         // Loop through the input directories.
+        int dirCount = 0;
         for (File baseDir : this.inDirList) {
             this.currentDir = baseDir;
             // Compute the output file for this directory.
             ITemplateWriter writer = null;
             String name = baseDir.getName();
             boolean skipFile = false;
-            File outFile = new File(this.outDir, name + ".text");
-            if (this.missingFlag && outFile.exists()) {
-                log.info("Skipping input directory {}-- output file {} exists.", baseDir, outFile);
+            File currOutFile;
+            if (this.outFile == null)
+                currOutFile = new File(this.outDir, name + ".text");
+            else
+                currOutFile = this.outFile;
+            dirCount++;
+            if (this.missingFlag && currOutFile.exists()) {
+                log.info("Skipping input directory #{} {}-- output file {} exists.", dirCount, baseDir, currOutFile);
                 skipFile = true;
             } else {
-                writer = new TemplatePrintWriter(outFile);
-                log.info("Processing data from {} into text file {}.", baseDir, outFile);
+                writer = new TemplatePrintWriter(currOutFile);
+                log.info("Processing data from directory #{} {} into text file {}.", dirCount, baseDir, currOutFile);
             }
             if (! skipFile)
                 this.executeTemplates(this.templateFile, writer);
