@@ -119,8 +119,8 @@ public class TemplateTextProcessor extends BaseProcessor {
 
     /** if specified, the name of the output file; single-file mode only */
     @Option(name = "--output", aliases = { "-o" }, metaVar = "output.text",
-            usage = "for single output files, the desired output file name")
-    private File outFile;
+            usage = "for single output files, the desired output file base name")
+    private String outFile;
 
     /** global template directory */
     @Option(name = "--global", aliases = { "-G" }, metaVar = "globalDir",
@@ -216,7 +216,7 @@ public class TemplateTextProcessor extends BaseProcessor {
             if (this.outFile == null)
                 currOutFile = new File(this.outDir, name + ".text");
             else
-                currOutFile = this.outFile;
+                currOutFile = new File(this.outDir, this.outFile);
             dirCount++;
             if (this.missingFlag && currOutFile.exists()) {
                 log.info("Skipping input directory #{} {}-- output file {} exists.", dirCount, baseDir, currOutFile);
