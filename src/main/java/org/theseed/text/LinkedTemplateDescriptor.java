@@ -105,7 +105,7 @@ public class LinkedTemplateDescriptor {
             String newLine = StringUtils.strip(templateLine);
             if (templateBuffer.length() > 0 && ! newLine.startsWith("{{"))
                 templateBuffer.append(' ');
-            templateBuffer.append(StringUtils.strip(templateLine));
+            templateBuffer.append(newLine);
             count++;
         }
         String retVal = templateBuffer.toString();
