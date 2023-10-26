@@ -53,6 +53,10 @@ import org.theseed.utils.ParseFailureException;
  * will be added to the current-line output from the main file.  The linked files must follow the main file to which
  * they apply.
  *
+ * For a global template, you can also have a #choices record.  The choices record has as its first parameter a file
+ * name and the remaining parameters are the names of columns to read into choice sets.  All choices records must be
+ * at the beginning of the file.
+ *
  * The first record of the template file absolutely must be "#main".  This is how we know we have the right kind of
  * file.  Subsequent lines that begin with "##" are treated as comments.
  *
@@ -254,26 +258,57 @@ public class TemplateTextProcessor extends BaseProcessor {
             Iterator<String> streamIter = templateStream.iterator();
             if (! streamIter.hasNext())
                 throw new IOException("No data found in template file.");
+            // First we process the choice records.
             String savedHeader = streamIter.next();
-            if (! StringUtils.startsWith(savedHeader, "#main"))
-                throw new IOException("Template file does not start with #main header.");
-            // Now we have the main header saved, and we can process each template group.
-            // Loop through the template lines.
-            for (var templateLine : templateStream) {
-                if (StringUtils.startsWith(templateLine, "#main")) {
-                    // New group starting.  Process the old group.
-                    this.processGroup(savedHeader, templateGroup, writer);
-                    // Set up for the next group.
-                    templateGroup.clear();
-                    savedHeader = templateLine;
-                } else if (! templateLine.startsWith("##"))
-                    templateGroup.add(templateLine);
+            while (savedHeader.startsWith("#choices")) {
+                this.processChoicesLine(savedHeader, writer);
+                if (! streamIter.hasNext()) {
+                    log.info("No template groups found in template file.");
+                    savedHeader = "";
+                } else
+                    savedHeader = streamIter.next();
             }
-            // Process the residual group.
-            this.processGroup(savedHeader, templateGroup, writer);
+            // Only proceed if there is template data other than the choices.
+            if (! savedHeader.isBlank()) {
+                if (! StringUtils.startsWith(savedHeader, "#main"))
+                    throw new IOException("Template file does not start with #main header.");
+                // Now we have the main header saved, and we can process each template group.
+                // Loop through the template lines.
+                for (var templateLine : templateStream) {
+                    if (StringUtils.startsWith(templateLine, "#main")) {
+                        // New group starting.  Process the old group.
+                        this.processGroup(savedHeader, templateGroup, writer);
+                        // Set up for the next group.
+                        templateGroup.clear();
+                        savedHeader = templateLine;
+                    } else if (! templateLine.startsWith("##"))
+                        templateGroup.add(templateLine);
+                }
+                // Process the residual group.
+                this.processGroup(savedHeader, templateGroup, writer);
+            }
         } finally {
             writer.close();
         }
+    }
+
+    /**
+     * Process a #choices line and ask the writer to save the choice sets.
+     *
+     * @param savedHeader	input choices line to parse
+     * @param writer		output template writer
+     *
+     * @throws ParseFailureException
+     * @throws IOException
+     */
+    private void processChoicesLine(String savedHeader, ITemplateWriter writer) throws ParseFailureException, IOException {
+        String[] parts = StringUtils.split(savedHeader);
+        if (parts.length < 3)
+            throw new ParseFailureException("Choices header requires at least a filename and a column name.");
+        // Create a file name.
+        File choiceFile = new File(this.currentDir, parts[1]);
+        String[] cols = Arrays.copyOfRange(parts, 2, parts.length);
+        writer.readChoiceLists(choiceFile, cols);
     }
 
     /**
@@ -324,7 +359,9 @@ public class TemplateTextProcessor extends BaseProcessor {
                     templateLines.clear();
                     while (groupIter.hasNext()) {
                         String templateLine = groupIter.next();
-                        if (templateLine.startsWith("#linked")) {
+                        if (templateLine.startsWith("#choices"))
+                            throw new ParseFailureException("Invalid placement of #choices record.");
+                        else if (templateLine.startsWith("#linked")) {
                             // We have a new template, so build the one we've accumulated.
                             this.buildLinkedTemplate(mainStream, linkHeader, templateLines);
                             // Set up for the next template.
