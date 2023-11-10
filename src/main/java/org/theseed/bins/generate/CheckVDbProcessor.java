@@ -21,6 +21,8 @@ import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.theseed.basic.BaseProcessor;
+import org.theseed.basic.ParseFailureException;
 import org.theseed.io.TabbedLineReader;
 import org.theseed.ncbi.NcbiConnection;
 import org.theseed.ncbi.NcbiListQuery;
@@ -28,8 +30,6 @@ import org.theseed.ncbi.NcbiTable;
 import org.theseed.ncbi.XmlException;
 import org.theseed.ncbi.XmlUtils;
 import org.theseed.p3api.P3Connection;
-import org.theseed.utils.BaseProcessor;
-import org.theseed.utils.ParseFailureException;
 import org.w3c.dom.Element;
 
 /**

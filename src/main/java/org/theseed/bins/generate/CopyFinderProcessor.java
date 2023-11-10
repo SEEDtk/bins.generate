@@ -18,6 +18,7 @@ import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.theseed.basic.ParseFailureException;
 import org.theseed.io.LineReader;
 import org.theseed.io.TabbedLineReader;
 import org.theseed.sequence.FastaInputStream;
@@ -25,7 +26,6 @@ import org.theseed.sequence.FastaOutputStream;
 import org.theseed.sequence.Sequence;
 import org.theseed.sequence.seeds.ProteinFinder;
 import org.theseed.utils.BaseInputProcessor;
-import org.theseed.utils.ParseFailureException;
 
 /**
  * This command builds a finder by taking a subset of the roles in an existing finder.  The command uses a list
