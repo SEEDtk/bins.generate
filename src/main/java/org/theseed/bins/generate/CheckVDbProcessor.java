@@ -29,6 +29,7 @@ import org.theseed.ncbi.NcbiListQuery;
 import org.theseed.ncbi.NcbiTable;
 import org.theseed.ncbi.XmlException;
 import org.theseed.ncbi.XmlUtils;
+import org.theseed.p3api.KeyBuffer;
 import org.theseed.p3api.P3Connection;
 import org.w3c.dom.Element;
 
@@ -484,7 +485,7 @@ public class CheckVDbProcessor extends BaseProcessor {
         int skipped = 0;
         int stored = 0;
         for (var record : records) {
-            String taxName = P3Connection.getString(record, "taxon_name");
+            String taxName = KeyBuffer.getString(record, "taxon_name");
             if (! taxNames.contains(taxName))
                 skipped++;
             else {
@@ -494,7 +495,7 @@ public class CheckVDbProcessor extends BaseProcessor {
                     throw new IllegalStateException("Did not find " + taxName + " in name map.");
                 else {
                     // Store the taxonomic ID.
-                    desc.setTaxID(P3Connection.getInt(record, "taxon_id"));
+                    desc.setTaxID(KeyBuffer.getInt(record, "taxon_id"));
                     stored++;
                 }
             }
