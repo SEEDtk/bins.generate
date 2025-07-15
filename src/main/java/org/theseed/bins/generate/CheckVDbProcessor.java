@@ -231,7 +231,7 @@ public class CheckVDbProcessor extends BaseProcessor {
     }
 
     @Override
-    protected boolean validateParms() throws IOException, ParseFailureException {
+    protected void validateParms() throws IOException, ParseFailureException {
         // Insure the checkV database directory exists.
         if (! this.dbDir.isDirectory())
             throw new FileNotFoundException("CheckV database directory " + this.dbDir + " does not exist or is invalid.");
@@ -258,7 +258,6 @@ public class CheckVDbProcessor extends BaseProcessor {
         this.contigMap = new HashMap<String, String>(hashSize);
         this.nameMap = new HashMap<String, TaxDescriptor>(hashSize / 250);
         this.genBankIds = new HashSet<String>(hashSize / 2);
-        return true;
     }
 
     @Override

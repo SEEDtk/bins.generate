@@ -48,13 +48,12 @@ public class CleanFinderProcessor extends BaseProcessor {
     }
 
     @Override
-    protected boolean validateParms() throws IOException, ParseFailureException {
+    protected void validateParms() throws IOException, ParseFailureException {
         // Insure the finder directory exists.
         if (! this.inDir.isDirectory())
             throw new FileNotFoundException("Input finder directory " + this.inDir + " is not found or invalid.");
         log.info("Loading protein finder from {}.", this.inDir);
         this.finder = new ProteinFinder(this.inDir);
-        return true;
     }
 
     @Override

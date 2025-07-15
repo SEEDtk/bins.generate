@@ -84,7 +84,7 @@ public class BuildFinderProcessor extends BaseProcessor {
     }
 
     @Override
-    protected boolean validateParms() throws IOException, ParseFailureException {
+    protected void validateParms() throws IOException, ParseFailureException {
         // Validate the reference genome input file.
         if (! this.refListFile.canRead())
             throw new FileNotFoundException("Reference-genome list file " + this.refListFile + " is not found or unreadable.");
@@ -116,7 +116,6 @@ public class BuildFinderProcessor extends BaseProcessor {
             log.info("Protein finder will be created in {}.", this.outDir);
         // Initialize the protein finder.
         this.finder = new ProteinFinder(this.outDir, this.roleFile);
-        return true;
     }
 
     @Override

@@ -233,7 +233,7 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
     }
 
     @Override
-    protected boolean validateParms() throws IOException, ParseFailureException {
+    protected void validateParms() throws IOException, ParseFailureException {
         if (! this.finderDir.isDirectory())
             throw new FileNotFoundException("Finder directory " + this.finderDir + " is not found or invalid.");
         log.info("Using finder files in {}.", this.finderDir);
@@ -320,7 +320,6 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
         this.phases.add(new SourPhase(this));
         this.phases.add(new RunPhase(this));
         this.phases.add(new ReportPhase(this));
-        return true;
     }
 
     @Override
