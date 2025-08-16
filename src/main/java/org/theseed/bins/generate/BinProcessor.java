@@ -26,7 +26,7 @@ import org.theseed.bins.methods.RunPhase;
 import org.theseed.bins.methods.SourPhase;
 import org.theseed.genome.Genome;
 import org.theseed.bins.methods.BinPhase;
-import org.theseed.p3api.P3Connection;
+import org.theseed.p3api.P3CursorConnection;
 import org.theseed.p3api.P3Genome;
 import org.theseed.p3api.P3Genome.Details;
 import org.theseed.sequence.seeds.ProteinFinder;
@@ -78,8 +78,6 @@ import org.theseed.sequence.seeds.ProteinFinder;
  *
  * The following command-line options relate to the PATRIC database.
  *
- * --dataAPIUrl		alternate URL for accessing the PATRIC data service used to download reference genomes
- * 					(default from environment variable "P3API_URL")
  * --nameSuffix		suffix to append to species names when computing bin names (default "clonal population")
  *
  * @author Bruce Parrello
@@ -93,7 +91,7 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
     /** binning parameter object */
     private BinParms parms;
     /** connection to PATRIC */
-    private P3Connection p3;
+    private P3CursorConnection p3;
     /** master bin group */
     private BinGroup binGroup;
     /** protein finder */
@@ -180,11 +178,6 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
     @Option(name = "--minHits", metaVar = "1", usage = "minimum number of SOUR hits required for a starter bin")
     private int minHits;
 
-    /** alternate URL for accessing the PATRIC data service used to download reference genomes */
-    @Option(name = "--dataApiUrl", aliases = { "--dataAPIUrl" },
-            usage = "alternate URL for accessing the PATRIC data service used to download reference genomes")
-    private String dataApiUrl;
-
     /* suffix to append to species names when computing bin names */
     @Option(name = "--nameSuffix", metaVar = "\"from sample SRS100286\"",
             usage = "suffix to append to species names when computing bin names")
@@ -217,7 +210,6 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
         this.covgFilter = 5.0;
         this.lenFilter = 500;
         this.dangLen = 0;
-        this.dataApiUrl = P3Connection.getApiUrl();
         this.kDna = 15;
         this.kProt = 8;
         this.maxE = 1e-20;
@@ -239,8 +231,7 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
         log.info("Using finder files in {}.", this.finderDir);
         this.finder = new ProteinFinder(this.finderDir);
         // Connect to PATRIC.
-        log.info("Data API URL is {}.", this.dataApiUrl);
-        this.p3 = new P3Connection(this.dataApiUrl);
+        this.p3 = new P3CursorConnection();
         // Now we process the parameters.
         this.parms = new BinParms();
         if (this.binCovgFilter < 0.0)
