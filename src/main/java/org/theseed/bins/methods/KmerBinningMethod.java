@@ -82,7 +82,7 @@ public class KmerBinningMethod extends BinningMethod {
             }
         }
         // Finalize the kmers.
-        this.kmerDb.finalize();
+        this.kmerDb.finish();
         // Get the binning group.
         BinGroup binGroup = this.processor.getBinGroup();
         // Get the bin strength limit.  This is the minimum difference required from the best hit count and
@@ -182,7 +182,7 @@ public class KmerBinningMethod extends BinningMethod {
             }
         }
         // Finalize the database.
-        dangKmers.finalize();
+        dangKmers.finish();
         // Now we make the second pass, looking for hits in the unplaced contigs.
         readCount = 0;
         scanCount = 0;
