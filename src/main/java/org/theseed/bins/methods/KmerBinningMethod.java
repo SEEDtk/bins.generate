@@ -18,6 +18,8 @@ import org.theseed.sequence.DiscriminatingKmerDb;
 import org.theseed.sequence.DnaDiscriminatingKmerDb;
 import org.theseed.sequence.FastaInputStream;
 import org.theseed.sequence.Sequence;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This is the basic binning method, which uses discriminating kmers.  The type of kmer database is
@@ -30,8 +32,10 @@ import org.theseed.sequence.Sequence;
 public class KmerBinningMethod extends BinningMethod {
 
     // FIELDS
+    /** logging facility */
+    private static final Logger log = LoggerFactory.getLogger(KmerBinningMethod.class);
     /** discriminating-kmer database */
-    private DiscriminatingKmerDb kmerDb;
+    private final DiscriminatingKmerDb kmerDb;
     /** map of bin names to bins */
     private Map<String, Bin> binMap;
 

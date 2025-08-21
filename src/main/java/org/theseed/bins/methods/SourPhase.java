@@ -12,6 +12,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.collections4.iterators.ReverseListIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.theseed.bins.Bin;
 import org.theseed.bins.BinGroup;
 import org.theseed.genome.Genome;
@@ -29,6 +31,8 @@ import org.theseed.sequence.seeds.ProteinFinder;
 public class SourPhase extends BinPhase {
 
     // FIELDS
+    /** logging facility */
+    private static final Logger log = LoggerFactory.getLogger(SourPhase.class);
     /** name of the save file for the sour hit map */
     private static final String SOUR_MAP_NAME = "sours.found.tbl";
     /** name of the save file for the reference genome map */

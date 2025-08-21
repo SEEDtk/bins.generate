@@ -27,7 +27,7 @@ public abstract class BinPhase {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(BinPhase.class);
+    private static final Logger log = LoggerFactory.getLogger(BinPhase.class);
     /** controlling bin processor */
     private IParms processor;
 

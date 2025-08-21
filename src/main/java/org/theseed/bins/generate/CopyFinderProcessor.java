@@ -51,7 +51,7 @@ public class CopyFinderProcessor extends BaseInputProcessor {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(CopyFinderProcessor.class);
+    private static final Logger log = LoggerFactory.getLogger(CopyFinderProcessor.class);
     /** desired role subset */
     private Set<String> newRoles;
     /** input (source) protein finder */

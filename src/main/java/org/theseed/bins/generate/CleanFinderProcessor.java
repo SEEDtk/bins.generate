@@ -33,7 +33,7 @@ public class CleanFinderProcessor extends BaseProcessor {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(CleanFinderProcessor.class);
+    private static final Logger log = LoggerFactory.getLogger(CleanFinderProcessor.class);
     /** protein finder */
     private ProteinFinder finder;
 

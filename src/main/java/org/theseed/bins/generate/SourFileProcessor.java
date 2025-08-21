@@ -40,7 +40,7 @@ public class SourFileProcessor extends BaseReportProcessor {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(SourFileProcessor.class);
+    private static final Logger log = LoggerFactory.getLogger(SourFileProcessor.class);
     /** set of role IDs to keep */
     private Set<String> keepIdSet;
 

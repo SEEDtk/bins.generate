@@ -87,7 +87,7 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(BinProcessor.class);
+    private static final Logger log = LoggerFactory.getLogger(BinProcessor.class);
     /** binning parameter object */
     private BinParms parms;
     /** connection to PATRIC */

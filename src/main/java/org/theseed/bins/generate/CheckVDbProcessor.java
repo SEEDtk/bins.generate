@@ -70,7 +70,7 @@ public class CheckVDbProcessor extends BaseProcessor {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(CheckVDbProcessor.class);
+    private static final Logger log = LoggerFactory.getLogger(CheckVDbProcessor.class);
     /** connection to PATRIC */
     private P3Connection p3;
     /** map of checkV IDs to descriptors */

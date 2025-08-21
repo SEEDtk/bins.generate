@@ -5,8 +5,6 @@ package org.theseed.bins.methods;
 
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.theseed.bins.Bin;
 import org.theseed.sequence.DiscriminatingKmerDb;
 import org.theseed.sequence.FeatureDiscriminatingKmerDb;
@@ -22,8 +20,6 @@ import org.theseed.sequence.ProteinDiscriminatingKmerDb;
 public abstract class BinningMethod {
 
     // FIELDS
-    /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(BinningMethod.class);
     /** controlling command processor */
     protected BinPhase.IParms processor;
 

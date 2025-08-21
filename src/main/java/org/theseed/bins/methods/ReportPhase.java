@@ -11,6 +11,8 @@ import java.util.Collection;
 import org.apache.commons.lang3.StringUtils;
 import org.theseed.bins.Bin;
 import org.theseed.bins.BinGroup;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This method produces a report on the bins.  For each bin, we output the name, the species ID,
@@ -22,6 +24,10 @@ import org.theseed.bins.BinGroup;
  *
  */
 public class ReportPhase extends BinPhase {
+
+    // FIELDS
+    /** logging facility */
+    private static final Logger log = LoggerFactory.getLogger(ReportPhase.class);
 
     public ReportPhase(IParms commandProcessor) {
         super(commandProcessor);

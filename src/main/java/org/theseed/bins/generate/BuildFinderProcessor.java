@@ -43,7 +43,7 @@ public class BuildFinderProcessor extends BaseProcessor {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(BuildFinderProcessor.class);
+    private static final Logger log = LoggerFactory.getLogger(BuildFinderProcessor.class);
     /** protein finder being created */
     private ProteinFinder finder;
     /** genome source */

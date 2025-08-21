@@ -14,7 +14,7 @@ import org.theseed.sequence.seeds.ProteinFinder;
 public class FinderTest {
 
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(FinderTest.class);
+    private static final Logger log = LoggerFactory.getLogger(FinderTest.class);
 
     /**
      * Perform a full-scale test on the finder.  This is only possible if SEEDtk_TEST_DATA has been set and
