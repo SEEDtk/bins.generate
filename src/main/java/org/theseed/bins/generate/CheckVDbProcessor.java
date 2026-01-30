@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.Option;
 import org.slf4j.Logger;
@@ -103,7 +104,7 @@ public class CheckVDbProcessor extends BaseProcessor {
         /** taxon lineage string */
         private String lineage;
         /** TRUE if this is a GenBank virus */
-        private boolean genBankFlag;
+        private final boolean genBankFlag;
 
         /**
          * Construct a taxonomic descriptor from a lineage string.
@@ -133,7 +134,7 @@ public class CheckVDbProcessor extends BaseProcessor {
             this.taxID = taxId;
             this.genBankFlag = true;
             // Strip off the parenthetical and save the name.
-            this.taxName = StringUtils.removeEnd(name, " (viruses)");
+            this.taxName = Strings.CS.removeEnd(name, " (viruses)");
         }
 
         @Override
@@ -254,10 +255,10 @@ public class CheckVDbProcessor extends BaseProcessor {
         this.ncbi = new NcbiConnection();
         // Create the maps.  We do an estimate based on the file size to try to optimize the size.
         int hashSize = (int) (this.inFileName.length() / 130);
-        this.taxMap = new HashMap<String, TaxDescriptor>(hashSize);
-        this.contigMap = new HashMap<String, String>(hashSize);
-        this.nameMap = new HashMap<String, TaxDescriptor>(hashSize / 250);
-        this.genBankIds = new HashSet<String>(hashSize / 2);
+        this.taxMap = new HashMap<>(hashSize);
+        this.contigMap = new HashMap<>(hashSize);
+        this.nameMap = new HashMap<>(hashSize / 250);
+        this.genBankIds = new HashSet<>(hashSize / 2);
     }
 
     @Override
@@ -462,7 +463,7 @@ public class CheckVDbProcessor extends BaseProcessor {
             }
         }
         // Process the residual batch.
-        if (descBatch.size() > 0) {
+        if (! descBatch.isEmpty()) {
             log.info("Processing residual query batch with {} names.", descBatch.size());
             this.processTaxIdBatch(descBatch);
         }
