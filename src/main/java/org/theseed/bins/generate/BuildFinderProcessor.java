@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.apache.commons.io.FileUtils;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.Option;
@@ -88,7 +89,7 @@ public class BuildFinderProcessor extends BaseProcessor {
         // Validate the reference genome input file.
         if (! this.refListFile.canRead())
             throw new FileNotFoundException("Reference-genome list file " + this.refListFile + " is not found or unreadable.");
-        this.refMap = new HashMap<String, Integer>(100000);
+        this.refMap = new HashMap<>(100000);
         try (TabbedLineReader refStream = new TabbedLineReader(this.refListFile)) {
             int genomeColIdx = refStream.findField("genome_id");
             int speciesColIdx = refStream.findField("species");
