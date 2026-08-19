@@ -26,7 +26,7 @@ import org.theseed.sequence.seeds.ProteinFinder;
  * Use "--clear" to force a rebuild.
  *
  * The positional parameters are the name of the output directory, the name of the role definition file to use, the genome
- * source (file or directory) containing the genomes to use for the SOUR proteins, the name of a tab-delimited file
+ * source (file or directory) containing the genomes to use for the SOUR proteins, and the name of a tab-delimited file
  * containing the IDs of the eligible reference genomes in its first column.
  *
  * The command-line options are as follows.
