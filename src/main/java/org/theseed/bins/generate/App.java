@@ -34,30 +34,14 @@ public class App {
         BaseProcessor processor;
         // Determine the command to process.
         switch (command) {
-        case "build" :
-            processor = new BuildFinderProcessor();
-            break;
-        case "copy" :
-            processor = new CopyFinderProcessor();
-            break;
-        case "bin" :
-            processor = new BinProcessor();
-            break;
-        case "clean" :
-            processor = new CleanFinderProcessor();
-            break;
-        case "sourFile" :
-            processor = new SourFileProcessor();
-            break;
-        case "checkv_db" :
-            processor = new CheckVDbProcessor();
-            break;
-        case "-h" :
-        case "--help" :
-            processor = null;
-            break;
-        default :
-            throw new RuntimeException("Invalid command " + command + ".");
+        case "build" -> processor = new BuildFinderProcessor();
+        case "copy" -> processor = new CopyFinderProcessor();
+        case "bin" -> processor = new BinProcessor();
+        case "clean" -> processor = new CleanFinderProcessor();
+        case "sourFile" -> processor = new SourFileProcessor();
+        case "checkv_db" -> processor = new CheckVDbProcessor();
+        case "-h", "--help" -> processor = null;
+        default -> throw new RuntimeException("Invalid command " + command + ".");
         }
         if (processor == null)
             BaseProcessor.showCommands(COMMANDS);
