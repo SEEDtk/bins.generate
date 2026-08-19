@@ -7,6 +7,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
@@ -30,6 +32,7 @@ import org.theseed.io.TabbedLineReader;
  * -v	display more frequent log messages
  * -i	input role definition file (if not STDIN)
  * -o 	output role definition file (if not STDOUT)
+ * -N   maximum number of roles to copy (default all)
  *
  * --col	index (1-based) or name of the role-set-file column containing role IDs (default "1")
  *
@@ -49,6 +52,10 @@ public class SourFileProcessor extends BaseReportProcessor {
     /** name of the input role definition file (if not STDIN) */
     @Option(name = "--input", aliases = { "-i" }, metaVar = "roles.in.subsystems", usage = "name of the input role definition file (if not STDIN)")
     private File roleFileName;
+    
+    /** maximum number of roles to copy */
+    @Option(name = "-N", metaVar = "maxRoles", usage = "maximum number of roles to copy (default all)")
+    private int maxRoles;
 
     /** index (1-based) or name of the role-set-file column containing roles IDs */
     @Option(name = "--col", metaVar = "role", usage = "index (1-based) or name of the role-set-file column containing roles IDs")
@@ -62,10 +69,14 @@ public class SourFileProcessor extends BaseReportProcessor {
     protected void setReporterDefaults() {
         this.colName = "1";
         this.roleFileName = null;
+        this.maxRoles = Integer.MAX_VALUE;
     }
 
     @Override
     protected void validateReporterParms() throws IOException, ParseFailureException {
+        // Verify that the role limit is valid.
+        if (this.maxRoles < 1)
+            throw new ParseFailureException("Maximum number of roles must be positive.");
         // Verify that the input file is readable if one was specified.
         if (this.roleFileName != null && ! this.roleFileName.canRead())
             throw new FileNotFoundException("Role definition file " + this.roleFileName + " is not found or unreadable.");
@@ -73,7 +84,15 @@ public class SourFileProcessor extends BaseReportProcessor {
         if (! this.roleSetFile.canRead())
             throw new FileNotFoundException("Role set file " + this.roleSetFile + " is not found or unreadable.");
         log.info("Reading role IDs from column \"{}\" of {}.", this.colName, this.roleSetFile);
-        this.keepIdSet = TabbedLineReader.readSet(this.roleSetFile, this.colName);
+        this.keepIdSet = new HashSet<>();
+        try (TabbedLineReader roleStream = new TabbedLineReader(this.roleSetFile)) {
+            int colIdx = roleStream.findField(this.colName);
+            Iterator<TabbedLineReader.Line> lineIter = roleStream.iterator();
+            while (this.keepIdSet.size() < this.maxRoles && lineIter.hasNext()) {
+                TabbedLineReader.Line line = lineIter.next();
+                this.keepIdSet.add(line.get(colIdx));
+            }
+        }
         log.info("{} roles will be kept.", this.keepIdSet.size());
     }
 
