@@ -19,13 +19,13 @@ import org.theseed.basic.BaseProcessor;
 import org.theseed.basic.ParseFailureException;
 import org.theseed.bins.BinGroup;
 import org.theseed.bins.BinParms;
+import org.theseed.bins.methods.BinPhase;
 import org.theseed.bins.methods.BinningMethod;
 import org.theseed.bins.methods.LoadPhase;
 import org.theseed.bins.methods.ReportPhase;
 import org.theseed.bins.methods.RunPhase;
 import org.theseed.bins.methods.SourPhase;
 import org.theseed.genome.Genome;
-import org.theseed.bins.methods.BinPhase;
 import org.theseed.p3api.P3CursorConnection;
 import org.theseed.p3api.P3Genome;
 import org.theseed.p3api.P3Genome.Details;
@@ -56,7 +56,7 @@ import org.theseed.sequence.seeds.ProteinFinder;
  * The following command-line options relate to the determination of the initial bins.
  *
  * --finder			name of the directory containing the protein finder files (default uses FINDER_PATH or "Finder" in the current directory)
- * --lenFilter		minimum length of a contig to be considered for the SOUR protein search (default 300)
+ * --lenFilter		minimum length of a contig to be considered for the SOUR protein search (default 500)
  * --covgFilter		minimum coverage for a contig to be considered for the SOUR protein search (default 5.0)
  * --maxE			maximum e-value for BLAST hits when finding a SOUR protein (default 1e-20)
  * --refMaxE		maximum e-value for BLAST hits when finding a reference genome using a SOUR protein (default 1e-10)
@@ -240,9 +240,12 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
         if (this.binLenFilter < 0.0)
             throw new ParseFailureException("Binning length filter cannot be negative.");
         this.parms.setBinLenFilter(this.binLenFilter);
+        if (this.lenFilter < 0)
+            throw new ParseFailureException("Seed-search length filter cannot be negative.");
+        this.parms.setLenFilter(this.lenFilter);
         if (this.covgFilter < 0.0)
             throw new ParseFailureException("Seed-search coverage filter cannot be negative.");
-        this.parms.setCovgFilter(this.binCovgFilter);
+        this.parms.setCovgFilter(this.covgFilter);
         if (this.dangLen < 0)
             throw new ParseFailureException("Mobile-element kmer length (dangLen) cannot be negative.");
         this.parms.setDangLen(this.dangLen);
@@ -306,7 +309,7 @@ public class BinProcessor extends BaseProcessor implements BinPhase.IParms {
             FileUtils.forceMkdir(this.genomeCacheDir);
         }
         // Initialize the binning phases.
-        this.phases = new ArrayList<BinPhase>();
+        this.phases = new ArrayList<>();
         this.phases.add(new LoadPhase(this));
         this.phases.add(new SourPhase(this));
         this.phases.add(new RunPhase(this));
