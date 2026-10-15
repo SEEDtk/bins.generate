@@ -13,6 +13,8 @@ import org.theseed.basic.BaseProcessor;
  * clean		remove ambiguous sequences from a finder's FASTA files
  * sourFile		create a subset of a role definition file with a specified set of roles
  * checkv_db	update the checkv database to include taxon IDs
+ * sortFinder	sort the protein finder FASTA files
+ * finderFile	create a FinderKmer load file from a finder
  *
  */
 public class App {
@@ -25,6 +27,8 @@ public class App {
              "clean", "remove ambiguous sequences from a finder's FASTA files",
              "sourFile", "create a subset of a role definition file with a specified set of roles",
              "checkv_db", "update the checkv database to include taxon IDs",
+             "sortFinder", "sort the protein finder FASTA files",
+             "finderFile", "create a FinderKmer load file from a finder"
     };
 
     public static void main( String[] args ) {
@@ -40,6 +44,8 @@ public class App {
         case "clean" -> processor = new CleanFinderProcessor();
         case "sourFile" -> processor = new SourFileProcessor();
         case "checkv_db" -> processor = new CheckVDbProcessor();
+        case "sortFinder" -> processor = new SortFinderProcessor();
+        case "finderFile" -> processor = new FinderFileProcessor();
         case "-h", "--help" -> processor = null;
         default -> throw new RuntimeException("Invalid command " + command + ".");
         }
