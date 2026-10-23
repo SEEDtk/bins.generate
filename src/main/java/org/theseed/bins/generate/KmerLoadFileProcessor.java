@@ -66,6 +66,8 @@ public class KmerLoadFileProcessor extends BaseInputProcessor {
     private P3CursorConnection p3;
     /** map of genome IDs to feature IDs (in order) for the current batch */
     private Map<String, List<Set<String>>> genomeFeatures;
+    /** list of genome IDs in input order */
+    private List<String> genomeIds;
     /** map of role IDs to array positions */
     private Map<String, Integer> rolePositions;
     /** genome source for the evaluation master database */
@@ -117,8 +119,9 @@ public class KmerLoadFileProcessor extends BaseInputProcessor {
         // Validate the batch size.
         if (this.batchSize <= 0)
             throw new IOException("Batch size must be positive.");
-        // Create the genome batch map.
+        // Create the genome batch map and list.
         this.genomeFeatures = new HashMap<>(this.batchSize * 2);
+        this.genomeIds = new ArrayList<>(this.batchSize);
         // Insure the protein finder directory exists.
         if (! this.evalMasterDir.isDirectory())
             throw new IOException("Evaluation master database directory " + this.evalMasterDir + " is not found or not a directory.");
@@ -195,6 +198,7 @@ public class KmerLoadFileProcessor extends BaseInputProcessor {
                         log.info("Processing batch {} of {} genomes.", batchCount, this.genomeFeatures.size());
                         this.processBatch(writer);
                         this.genomeFeatures.clear();
+                        this.genomeIds.clear();
                         log.info("{} total genomes in output file.", genomeCount + this.skipped);
                     }
                     // Denote we're processing a new genome.
@@ -204,6 +208,8 @@ public class KmerLoadFileProcessor extends BaseInputProcessor {
                         log.warn("Genome {} not found in the database.", genomeId);
                         missingGenomes++;
                     } else {
+                        // This genome exists, so add it to the batch.
+                        this.genomeIds.add(genomeId);
                         // Extract the features we want from this genome and store them in the batch.
                         for (Feature feat : genome.getFeatures()) {
                             List<Role> roles = feat.getUsefulRoles(this.roleMap);
@@ -214,6 +220,7 @@ public class KmerLoadFileProcessor extends BaseInputProcessor {
                                     List<Set<String>> genomeFeatureIds = this.genomeFeatures.computeIfAbsent(genomeId, k -> this.newSourList());
                                     Set<String> roleFeatures = genomeFeatureIds.get(rolePos);
                                     roleFeatures.add(feat.getId());
+                                    proteinCount++;
                                 }
                             }
                         }
@@ -224,6 +231,7 @@ public class KmerLoadFileProcessor extends BaseInputProcessor {
                         }
                         if (emptyCount > 3)
                             log.warn("Genome {} is missing {} features.", genomeId, emptyCount);
+                        missingCount += emptyCount;
                     }
                 }
             }
@@ -291,12 +299,11 @@ public class KmerLoadFileProcessor extends BaseInputProcessor {
         log.info("Gathered {} features for the current batch.", batchFeatures.size());
         Map<String,String> featureSeqs = this.getFeatureSequences(batchFeatures);
         // Now we loop through the genomes and write the proteins.
-        for (var genomeEntry : this.genomeFeatures.entrySet()) {
-            String genomeId = genomeEntry.getKey();
+        for (String genomeId : this.genomeIds) {
             writer.print(genomeId);
             // The tricky part here is that sometimes there is more than one feature for a genome/role pair,
             // in which case we output the proteins comma-delimited.
-            List<Set<String>> featureSets = genomeEntry.getValue();
+            List<Set<String>> featureSets = this.genomeFeatures.get(genomeId);
             for (Set<String> features : featureSets) {
                 writer.print("\t");
                 if (! features.isEmpty()) {
