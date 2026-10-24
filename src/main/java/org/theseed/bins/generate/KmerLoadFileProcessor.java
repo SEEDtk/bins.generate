@@ -269,6 +269,7 @@ public class KmerLoadFileProcessor extends BaseInputProcessor {
             // Write the header line for a fresh run.
             retVal.print("genome_id");
             this.roleIds.stream().forEach(roleId -> retVal.print("\t" + roleId));
+            retVal.println(); // End the header line with a newline
         }
         return retVal;
     }
